@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TOWER_FIRE_INTERVAL, TOWER_RANGE } from '../config/combatConfig';
 import { TILE } from '../config/gameConfig';
 import type { Point } from '../data/map';
-import { isInRange, TowerAttack, type CombatTarget } from '../systems/Combat';
+import { selectTarget, TowerAttack, type CombatTarget } from '../systems/Combat';
 
 export class Tower extends Phaser.GameObjects.Container {
   private readonly turret: Phaser.GameObjects.Container;
@@ -27,8 +27,13 @@ export class Tower extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
-  updateAttack(deltaMs: number, target: CombatTarget): boolean {
-    if (isInRange(this, target, TOWER_RANGE)) {
+  updateAttack(
+    deltaMs: number,
+    targets: readonly CombatTarget[],
+  ): CombatTarget | null {
+    const target = selectTarget(this, targets, TOWER_RANGE);
+
+    if (target) {
       this.turret.setRotation(
         Phaser.Math.Angle.Between(
           this.x,
@@ -39,6 +44,6 @@ export class Tower extends Phaser.GameObjects.Container {
       );
     }
 
-    return this.attack.update(deltaMs / 1000, this, target);
+    return this.attack.update(deltaMs / 1000, this, target) ? target : null;
   }
 }

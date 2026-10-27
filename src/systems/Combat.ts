@@ -2,6 +2,7 @@ import type { Point } from '../data/map';
 
 export type CombatTarget = {
   readonly position: Point;
+  readonly progress: number;
   health: number;
 };
 
@@ -16,6 +17,25 @@ export function isInRange(
   return target.health > 0 && dx * dx + dy * dy <= range * range;
 }
 
+export function selectTarget(
+  origin: Point,
+  targets: readonly CombatTarget[],
+  range: number,
+): CombatTarget | null {
+  let selected: CombatTarget | null = null;
+
+  for (const target of targets) {
+    if (
+      isInRange(origin, target, range) &&
+      (selected === null || target.progress > selected.progress)
+    ) {
+      selected = target;
+    }
+  }
+
+  return selected;
+}
+
 export class TowerAttack {
   private cooldown = 0;
 
@@ -24,10 +44,14 @@ export class TowerAttack {
     private readonly interval: number,
   ) {}
 
-  update(deltaSeconds: number, origin: Point, target: CombatTarget): boolean {
+  update(
+    deltaSeconds: number,
+    origin: Point,
+    target: CombatTarget | null,
+  ): boolean {
     this.cooldown = Math.max(0, this.cooldown - Math.max(0, deltaSeconds));
 
-    if (this.cooldown > 0 || !isInRange(origin, target, this.range)) {
+    if (this.cooldown > 0 || target === null || !isInRange(origin, target, this.range)) {
       return false;
     }
 

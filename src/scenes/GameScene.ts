@@ -1,18 +1,21 @@
 import Phaser from 'phaser';
-import { ENEMY_MAX_HEALTH } from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 import { PATH_TILES, type Point } from '../data/map';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
+import { WaveSystem } from '../systems/WaveSystem';
 
 export class GameScene extends Phaser.Scene {
-  private enemy?: Enemy;
+  private enemies: Enemy[] = [];
   private towers: Tower[] = [];
   private projectiles: Projectile[] = [];
-  private kills = 0;
-  private combatText!: Phaser.GameObjects.Text;
+  private waves!: WaveSystem;
+  private matchText!: Phaser.GameObjects.Text;
+  private phaseText!: Phaser.GameObjects.Text;
+  private waveButton!: Phaser.GameObjects.Text;
   private fpsText?: Phaser.GameObjects.Text;
   private placement!: TowerPlacement;
   private placementPreview!: Phaser.GameObjects.Graphics;
@@ -27,16 +30,18 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.placement = new TowerPlacement(COLS, ROWS, PATH_TILES);
+    this.waves = new WaveSystem(WAVE_COUNTS, SPAWN_INTERVAL, STARTING_LIVES);
     this.towerSelected = false;
     this.towers = [];
+    this.enemies = [];
     this.projectiles = [];
-    this.kills = 0;
     this.fpsText = undefined;
 
     this.drawMap();
     this.createHud();
     this.createPlacementControls();
-    this.spawnEnemy();
+    this.createMatchControls();
+    this.refreshHud();
 
     this.input.on('pointermove', this.updatePlacementPreview, this);
     this.input.on('pointerdown', this.placeTower, this);
@@ -91,16 +96,16 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 3', {
+    this.add.text(786, 68, 'MILESTONE 4', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
     });
-    this.combatText = this.add.text(786, 112, 'ENEMY 3/3 HP\nKILLS 0\nWAVE DEMO', {
+    this.matchText = this.add.text(786, 112, '', {
       fontFamily: 'monospace',
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#ffffff',
-      lineSpacing: 14,
+      lineSpacing: 5,
     });
 
     const title = import.meta.env.DEV
@@ -117,9 +122,14 @@ export class GameScene extends Phaser.Scene {
       fontSize: '13px',
       color: '#aab7bd',
     });
+    this.phaseText = this.add.text(24, 610, '', {
+      fontFamily: 'monospace',
+      fontSize: '13px',
+      color: '#b4d9bc',
+    });
 
     if (import.meta.env.DEV) {
-      this.fpsText = this.add.text(786, 450, 'FPS: --', {
+      this.fpsText = this.add.text(786, 444, 'FPS: --', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#91ff9e',
@@ -141,7 +151,7 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.towerButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.leftButtonDown()) {
+      if (!pointer.leftButtonDown() || this.waves.finished) {
         return;
       }
 
@@ -166,7 +176,7 @@ export class GameScene extends Phaser.Scene {
       wordWrap: { width: 156 },
       lineSpacing: 5,
     });
-    this.towerCountText = this.add.text(786, 400, 'TOWERS  0', {
+    this.towerCountText = this.add.text(786, 410, 'TOWERS  0', {
       fontFamily: 'monospace',
       fontSize: '15px',
       color: '#b9e8f5',
@@ -216,7 +226,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private placeTower(pointer: Phaser.Input.Pointer): void {
-    if (!this.towerSelected || !pointer.leftButtonDown()) {
+    if (!this.towerSelected || this.waves.finished || !pointer.leftButtonDown()) {
       return;
     }
 
@@ -241,29 +251,169 @@ export class GameScene extends Phaser.Scene {
     this.updatePlacementPreview(pointer);
   }
 
-  private spawnEnemy(): void {
+  private createMatchControls(): void {
+    this.waveButton = this.add
+      .text(786, 360, '', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#ffffff',
+        backgroundColor: '#236b88',
+        fixedWidth: 148,
+        align: 'center',
+        padding: { x: 8, y: 8 },
+      })
+      .setInteractive({ useHandCursor: true });
+
+    this.waveButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.leftButtonDown()) {
+        this.waves.startWave();
+        this.refreshHud();
+      }
+    });
+
+    this.add
+      .text(786, 470, 'RESTART', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#ffffff',
+        backgroundColor: '#33485c',
+        fixedWidth: 148,
+        align: 'center',
+        padding: { x: 8, y: 8 },
+      })
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.leftButtonDown()) {
+          this.scene.restart();
+        }
+      });
+  }
+
+  private spawnEnemy(ageSeconds: number): void {
     const path = PATH_TILES.map((point) => ({
       x: (point.x + 0.5) * TILE,
       y: (point.y + 0.5) * TILE,
     }));
+    const enemy = new Enemy(this, path);
 
-    this.enemy = new Enemy(this, path);
+    enemy.update(ageSeconds * 1000);
+    this.enemies.push(enemy);
+  }
+
+  private clearProjectiles(): void {
+    for (const projectile of this.projectiles) {
+      projectile.destroy();
+    }
+
+    this.projectiles = [];
+  }
+
+  private finishMatch(): void {
+    this.clearProjectiles();
+
+    for (const enemy of this.enemies) {
+      enemy.destroy();
+    }
+
+    this.enemies = [];
+    this.cancelPlacement();
+    this.towerButton.disableInteractive();
+    this.placementText.setText('Match finished.\nPress RESTART.');
+
+    const won = this.waves.state === 'won';
+    const panel = this.add
+      .rectangle(0, 0, 480, 180, 0x15202b, 0.96)
+      .setStrokeStyle(3, won ? 0x91ff9e : 0xff7373);
+    const title = this.add
+      .text(0, -35, won ? 'VICTORY' : 'DEFEAT', {
+        fontFamily: 'monospace',
+        fontSize: '30px',
+        color: won ? '#91ff9e' : '#ff7373',
+      })
+      .setOrigin(0.5);
+    const detail = this.add
+      .text(0, 25, 'Press RESTART to play again.', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, [
+      panel,
+      title,
+      detail,
+    ]).setDepth(20);
+  }
+
+  private refreshHud(): void {
+    const waves = this.waves;
+    const ready = waves.state === 'ready';
+
+    this.matchText.setText(
+      `LIVES ${waves.lives}\nWAVE ${waves.waveNumber}/${waves.totalWaves}\nALIVE ${waves.active}\nKILLS ${waves.kills}`,
+    );
+    this.waveButton
+      .setText(
+        ready
+          ? `START WAVE ${waves.waveNumber + 1}`
+          : waves.state === 'running'
+            ? 'WAVE RUNNING'
+            : 'FINISHED',
+      )
+      .setBackgroundColor(ready ? '#236b88' : '#33485c');
+
+    this.waveButton.input!.enabled = ready;
+
+    if (ready) {
+      this.phaseText.setText(
+        `Ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
+      );
+    } else if (waves.state === 'running') {
+      this.phaseText.setText(
+        `Wave ${waves.waveNumber}: ${waves.spawned}/${waves.waveSize} enemies spawned.`,
+      );
+    } else {
+      this.phaseText.setText(
+        waves.state === 'won' ? 'All 3 waves cleared.' : 'No lives remaining.',
+      );
+    }
   }
 
   update(_time: number, delta: number): void {
-    const enemy = this.enemy;
+    this.fpsText?.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
 
-    if (!enemy) {
+    if (this.waves.finished) {
       return;
     }
 
-    enemy.update(delta);
+    for (const enemy of this.enemies) {
+      enemy.update(delta);
+    }
 
-    // An escaped enemy is removed before towers can shoot at the next spawn.
-    if (!enemy.finished) {
+    for (const age of this.waves.update(delta / 1000)) {
+      this.spawnEnemy(age);
+    }
+
+    // Resolve escaped enemies before selecting targets or applying damage.
+    this.enemies = this.enemies.filter((enemy) => {
+      if (enemy.finished) {
+        this.waves.resolveEnemy('escaped');
+        enemy.destroy();
+        return false;
+      }
+
+      return true;
+    });
+
+    if (!this.waves.finished) {
+      const targets = this.enemies.map((enemy) => enemy.target);
+
       for (const tower of this.towers) {
-        if (tower.updateAttack(delta, enemy.target)) {
-          this.projectiles.push(new Projectile(this, tower, enemy.target));
+        const target = tower.updateAttack(delta, targets);
+
+        if (target) {
+          this.projectiles.push(new Projectile(this, tower, target));
         }
       }
 
@@ -275,27 +425,25 @@ export class GameScene extends Phaser.Scene {
 
         return true;
       });
+
+      this.enemies = this.enemies.filter((enemy) => {
+        if (enemy.dead) {
+          this.waves.resolveEnemy('killed');
+          enemy.destroy();
+          return false;
+        }
+
+        enemy.refreshHealthBar();
+        return true;
+      });
     }
 
-    if (enemy.dead || enemy.finished) {
-      if (enemy.dead) {
-        this.kills++;
-      }
-
-      for (const projectile of this.projectiles) {
-        projectile.destroy();
-      }
-
-      this.projectiles = [];
-      enemy.destroy();
-      this.spawnEnemy();
-    } else {
-      enemy.refreshHealthBar();
+    if (this.waves.finished) {
+      this.finishMatch();
+    } else if (this.waves.state === 'ready') {
+      this.clearProjectiles();
     }
 
-    this.combatText.setText(
-      `ENEMY ${this.enemy!.target.health}/${ENEMY_MAX_HEALTH} HP\nKILLS ${this.kills}\nWAVE DEMO`,
-    );
-    this.fpsText?.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
+    this.refreshHud();
   }
 }

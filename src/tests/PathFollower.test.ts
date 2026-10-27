@@ -87,3 +87,31 @@ describe('PathFollower', () => {
     expect(() => new PathFollower(path, speed)).toThrow();
   });
 });
+
+describe('Path progress for targeting', () => {
+  it('tracks traveled distance across corners and clamps at the endpoint', () => {
+    const follower = new PathFollower(
+      [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }],
+      5,
+    );
+
+    expect(follower.distanceTraveled).toBe(0);
+    follower.update(3);
+    expect(follower.distanceTraveled).toBe(15);
+    follower.update(100);
+    expect(follower.distanceTraveled).toBe(20);
+    follower.update(1);
+    expect(follower.distanceTraveled).toBe(20);
+  });
+
+  it('counts progress when a path reverses screen direction', () => {
+    const follower = new PathFollower(
+      [{ x: 10, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 10 }],
+      5,
+    );
+
+    follower.update(3);
+    expect(follower.position).toEqual({ x: 0, y: 5 });
+    expect(follower.distanceTraveled).toBe(15);
+  });
+});

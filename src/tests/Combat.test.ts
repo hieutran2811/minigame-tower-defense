@@ -8,6 +8,7 @@ import {
 } from '../config/combatConfig';
 import {
   isInRange,
+  selectTarget,
   ProjectileMotion,
   TowerAttack,
   type CombatTarget,
@@ -17,6 +18,7 @@ const origin = { x: 0, y: 0 };
 const createTarget = (x = 100, y = 0): CombatTarget => ({
   position: { x, y },
   health: ENEMY_MAX_HEALTH,
+  progress: 0,
 });
 
 describe('Tower targeting and cooldown', () => {
@@ -187,5 +189,47 @@ describe('Projectile motion and damage', () => {
     expect(projectile.update(-1)).toBe(false);
     expect(projectile.position).toEqual(origin);
     expect(target.health).toBe(3);
+  });
+});
+
+describe('Multiple-enemy targeting', () => {
+  it('chooses the in-range enemy with the most path progress', () => {
+    const near = { ...createTarget(20), progress: 10 };
+    const ahead = { ...createTarget(100), progress: 200 };
+    const outOfRange = { ...createTarget(200), progress: 300 };
+
+    expect(selectTarget(origin, [near, ahead, outOfRange], TOWER_RANGE)).toBe(ahead);
+  });
+
+  it('ignores dead enemies and keeps spawn order when progress is tied', () => {
+    const first = { ...createTarget(50), progress: 100 };
+    const second = { ...createTarget(60), progress: 100 };
+    const dead = { ...createTarget(40), progress: 200, health: 0 };
+
+    expect(selectTarget(origin, [dead, first, second], TOWER_RANGE)).toBe(first);
+  });
+
+  it('returns no target when none are alive in range', () => {
+    expect(selectTarget(origin, [], TOWER_RANGE)).toBeNull();
+    expect(selectTarget(origin, [createTarget(500)], TOWER_RANGE)).toBeNull();
+  });
+
+  it('advances cooldown even while there is no target', () => {
+    const attack = new TowerAttack(TOWER_RANGE, TOWER_FIRE_INTERVAL);
+    const target = createTarget();
+
+    expect(attack.update(0, origin, target)).toBe(true);
+    expect(attack.update(1, origin, null)).toBe(false);
+    expect(attack.update(0, origin, target)).toBe(true);
+  });
+
+  it('keeps projectiles tied to their original target while another enemy lives', () => {
+    const first = createTarget();
+    const second = createTarget();
+    const projectile = new ProjectileMotion(origin, first, 100, 1);
+    first.health = 0;
+
+    expect(projectile.update(1)).toBe(true);
+    expect(second.health).toBe(ENEMY_MAX_HEALTH);
   });
 });

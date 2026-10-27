@@ -2,6 +2,7 @@ import type { Point } from '../data/map';
 
 export class PathFollower {
   private index = 0;
+  private traveled = 0;
   readonly position: Point;
 
   constructor(
@@ -19,6 +20,10 @@ export class PathFollower {
     return this.index >= this.waypoints.length - 1;
   }
 
+  get distanceTraveled(): number {
+    return this.traveled;
+  }
+
   update(deltaSeconds: number): void {
     let remaining = Math.max(0, deltaSeconds) * this.speed;
 
@@ -31,11 +36,13 @@ export class PathFollower {
       if (distance <= remaining) {
         this.position.x = target.x;
         this.position.y = target.y;
+        this.traveled += distance;
         remaining -= distance;
         this.index++;
       } else {
         this.position.x += (dx / distance) * remaining;
         this.position.y += (dy / distance) * remaining;
+        this.traveled += remaining;
         remaining = 0;
       }
     }

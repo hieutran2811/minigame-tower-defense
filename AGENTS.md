@@ -3,20 +3,23 @@
 ## Mission
 Build a small, maintainable desktop-browser 2D tower defense game with Phaser 3, TypeScript and Vite. Work one approved milestone at a time.
 
-## Current scope: Milestone 3
-- Preserve M1/M2: 12x8 map, 64px tiles; 960x640 canvas with sidebar.
-- Fixed orthogonal path and one demo enemy; respawn after death or reaching the endpoint.
-- FPS and development label in development only.
-- Procedural pixel-style rendering without paid assets.
-- Select/place one basic tower type only on empty grass; preview, feedback, cancellation.
-- Towers aim at the demo enemy within 128px and fire at most once per second.
-- Homing projectiles deal 1 damage on impact; enemies have 3 HP.
-- Show the enemy health bar, current HP, and kill count.
-- Clear projectiles when the enemy respawns; old shots must never damage a new enemy.
-- Unit tests for movement, map constraints, placement, targeting, cooldown, and projectiles.
+## Current scope: Milestone 4
+- Preserve the 12x8 map, 64px tiles, 960x640 canvas/sidebar, and fixed orthogonal path.
+- Procedural pixel-style graphics; FPS and development label only in development.
+- One basic tower type placed only on empty grass, with preview and cancellation.
+- Towers prioritize the in-range enemy furthest along the path; ties keep spawn order.
+- Preserve combat: 128px range, 1 shot/second, 1 damage, enemy 3 HP and 95px/second.
+- Three manually started waves containing 5, 8, and 12 enemies, spawning 1 second apart.
+- First enemy spawns immediately; a new wave starts only after all previous enemies are resolved.
+- Enemies are removed on death/exit and do not respawn individually.
+- Start with 10 lives; each escape costs 1 life, each kill adds to KILLS.
+- Win after resolving wave 3 with lives remaining; lose immediately at 0 lives.
+- Freeze spawning/combat/placement after a result and clear enemies/projectiles.
+- Restart is available at any time and resets the entire match, including towers.
+- Unit tests for path progress, placement, targeting, projectiles, wave timing, lives, and outcomes.
 
 ## Out of scope
-No economy, waves, tower upgrades, selling, multiple enemy types, backend, database, auth, multiplayer or React.
+No economy, tower upgrades, selling, multiple enemy types, backend, database, auth, multiplayer or React.
 
 ## Architecture rules
 - `src/systems`: pure TypeScript logic, no Phaser imports.
@@ -36,4 +39,4 @@ No economy, waves, tower upgrades, selling, multiple enemy types, backend, datab
 6. Stop before the next milestone and request approval.
 
 ## Acceptance
-Map 12x8; enemy stays on the orthogonal path and respawns at full HP on death/exit; FPS visible only in development; placement works only on empty grass and follows canvas scaling; towers aim/fire only in range with the approved cooldown; projectiles apply damage once and never carry over to respawn; health bar and kill count update; tests/build pass; no browser console errors.
+Map/path and scaled placement remain correct; waves spawn the exact counts at the correct interval; no automatic next wave or individual respawn; targeting follows path progress; damage applies only to the original live target; escapes cost exactly 1 life; victory/defeat stop the match; Restart fully clears state/listeners; FPS appears only in development; tests/build pass; no browser console errors.

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ENEMY_MAX_HEALTH } from '../config/combatConfig';
+import { ENEMY_MAX_HEALTH, ENEMY_SPEED } from '../config/combatConfig';
 import type { Point } from '../data/map';
 import type { CombatTarget } from '../systems/Combat';
 import { PathFollower } from '../systems/PathFollower';
@@ -11,10 +11,14 @@ export class Enemy {
   private readonly follower: PathFollower;
 
   constructor(scene: Phaser.Scene, path: Point[]) {
-    this.follower = new PathFollower(path, 95);
+    this.follower = new PathFollower(path, ENEMY_SPEED);
+    const follower = this.follower;
     this.target = {
       position: this.follower.position,
       health: ENEMY_MAX_HEALTH,
+      get progress() {
+        return follower.distanceTraveled;
+      },
     };
 
     const body = scene.add
@@ -54,7 +58,7 @@ export class Enemy {
   }
 
   destroy(): void {
-    // Invalidate the target so a projectile can never hit a later respawn.
+    // In-flight shots keep this target reference and expire after its removal.
     this.target.health = 0;
     this.sprite.destroy();
   }
