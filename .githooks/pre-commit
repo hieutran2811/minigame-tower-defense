@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+node "$root/tools/hooks/git-guard.mjs" commit
+git diff --cached --check
+. "$root/.githooks/confirm.sh"
+confirm_action COMMIT

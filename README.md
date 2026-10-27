@@ -160,3 +160,16 @@ Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. Vite still warns about a JavaScript chunk larger than
 500 kB because it includes Phaser; the production build succeeds.
+
+## Agent workflow and hooks
+
+The execution policy and review workflow are in [AGENTS.md](AGENTS.md).
+Read [docs/guardrails.md](docs/guardrails.md) for activation, verification,
+manual commit/push confirmation, and security limitations.
+
+```bash
+npm run test:hooks
+```
+
+Hook checks use Node's built-in test runner and add no dependency.
+The project currently has no lint script; do not report lint as passed.

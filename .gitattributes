@@ -1,0 +1,6 @@
+.githooks/* text eol=lf
+.codex/*.json text eol=lf
+.codex/*.toml text eol=lf
+.codex/rules/*.rules text eol=lf
+.codex/hooks/*.mjs text eol=lf
+tools/hooks/*.mjs text eol=lf

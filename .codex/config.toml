@@ -1,0 +1,6 @@
+# Managed/tool permissions can remain more restrictive.
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[features]
+hooks = true

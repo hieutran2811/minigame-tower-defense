@@ -1,0 +1,17 @@
+{
+  "description": "Repository guardrails. Review/trust via /hooks; never bypass trust.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try { const cp = require('node:child_process'); const p = require('node:path'); const u = require('node:url'); const root = cp.execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8', windowsHide: true }).trim(); import(u.pathToFileURL(p.join(root, '.codex/hooks/pre-tool-use.mjs')).href).catch(() => process.exit(2)); } catch { process.exit(2); }\"",
+            "timeout": 10,
+            "statusMessage": "Checking repository safety policy"
+          }
+        ]
+      }
+    ]
+  }
+}

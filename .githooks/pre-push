@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+node "$root/tools/hooks/git-guard.mjs" push
+. "$root/.githooks/confirm.sh"
+confirm_action PUSH
