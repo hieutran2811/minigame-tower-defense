@@ -1,12 +1,18 @@
 import Phaser from 'phaser';
+import { ENEMY_MAX_HEALTH } from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { PATH_TILES, type Point } from '../data/map';
 import { Enemy } from '../entities/Enemy';
+import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
 
 export class GameScene extends Phaser.Scene {
   private enemy?: Enemy;
+  private towers: Tower[] = [];
+  private projectiles: Projectile[] = [];
+  private kills = 0;
+  private combatText!: Phaser.GameObjects.Text;
   private fpsText?: Phaser.GameObjects.Text;
   private placement!: TowerPlacement;
   private placementPreview!: Phaser.GameObjects.Graphics;
@@ -22,6 +28,9 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.placement = new TowerPlacement(COLS, ROWS, PATH_TILES);
     this.towerSelected = false;
+    this.towers = [];
+    this.projectiles = [];
+    this.kills = 0;
     this.fpsText = undefined;
 
     this.drawMap();
@@ -82,14 +91,14 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 2', {
+    this.add.text(786, 68, 'MILESTONE 3', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
     });
-    this.add.text(786, 112, 'HP     100\nGOLD   200\nWAVE   DEMO', {
+    this.combatText = this.add.text(786, 112, 'ENEMY 3/3 HP\nKILLS 0\nWAVE DEMO', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#ffffff',
       lineSpacing: 14,
     });
@@ -145,9 +154,9 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(786, 266, 'Placement demo', {
+    this.add.text(786, 266, '128px / 1s / 1 DMG', {
       fontFamily: 'monospace',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#b4d9bc',
     });
     this.placementText = this.add.text(786, 300, 'Select BASIC TOWER\nto start building.', {
@@ -224,7 +233,7 @@ export class GameScene extends Phaser.Scene {
     } else if (status === 'occupied') {
       this.placementText.setText('This tile already\nhas a tower.');
     } else if (this.placement.place(tile)) {
-      new Tower(this, tile);
+      this.towers.push(new Tower(this, tile));
       this.towerCountText.setText(`TOWERS  ${this.placement.count}`);
       this.placementText.setText('Tower placed.\nChoose another tile.');
     }
@@ -242,13 +251,51 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
-    this.enemy?.update(delta);
+    const enemy = this.enemy;
 
-    if (this.enemy?.finished) {
-      this.enemy.destroy();
-      this.spawnEnemy();
+    if (!enemy) {
+      return;
     }
 
+    enemy.update(delta);
+
+    // An escaped enemy is removed before towers can shoot at the next spawn.
+    if (!enemy.finished) {
+      for (const tower of this.towers) {
+        if (tower.updateAttack(delta, enemy.target)) {
+          this.projectiles.push(new Projectile(this, tower, enemy.target));
+        }
+      }
+
+      this.projectiles = this.projectiles.filter((projectile) => {
+        if (projectile.update(delta)) {
+          projectile.destroy();
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    if (enemy.dead || enemy.finished) {
+      if (enemy.dead) {
+        this.kills++;
+      }
+
+      for (const projectile of this.projectiles) {
+        projectile.destroy();
+      }
+
+      this.projectiles = [];
+      enemy.destroy();
+      this.spawnEnemy();
+    } else {
+      enemy.refreshHealthBar();
+    }
+
+    this.combatText.setText(
+      `ENEMY ${this.enemy!.target.health}/${ENEMY_MAX_HEALTH} HP\nKILLS ${this.kills}\nWAVE DEMO`,
+    );
     this.fpsText?.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
   }
 }
