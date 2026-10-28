@@ -12,6 +12,7 @@ import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
 import { WaveSystem } from '../systems/WaveSystem';
+import { createHelpPanel } from './createHelpPanel';
 import { drawPathGuides } from './drawPathGuides';
 
 export class GameScene extends Phaser.Scene {
@@ -24,6 +25,8 @@ export class GameScene extends Phaser.Scene {
   private exitFlash!: Phaser.GameObjects.Rectangle;
   private phaseText!: Phaser.GameObjects.Text;
   private waveButton!: Phaser.GameObjects.Text;
+  private helpButton!: Phaser.GameObjects.Text;
+  private helpPanel!: Phaser.GameObjects.Container;
   private fpsText?: Phaser.GameObjects.Text;
   private placement!: TowerPlacement;
   private placementPreview!: Phaser.GameObjects.Graphics;
@@ -51,18 +54,21 @@ export class GameScene extends Phaser.Scene {
     this.createHud();
     this.createPlacementControls();
     this.createMatchControls();
+    this.createHelpControls();
     this.refreshHud();
 
     this.input.on('pointermove', this.updatePlacementPreview, this);
     this.input.on('pointerdown', this.handleMapPointerDown, this);
     this.input.on('gameout', this.hidePlacementPreview, this);
     this.input.keyboard?.on('keydown-ESC', this.cancelSelection, this);
+    this.input.keyboard?.on('keydown-H', this.toggleHelp, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off('pointermove', this.updatePlacementPreview, this);
       this.input.off('pointerdown', this.handleMapPointerDown, this);
       this.input.off('gameout', this.hidePlacementPreview, this);
       this.input.keyboard?.off('keydown-ESC', this.cancelSelection, this);
+      this.input.keyboard?.off('keydown-H', this.toggleHelp, this);
     });
   }
 
@@ -118,7 +124,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 7', {
+    this.add.text(786, 68, 'MILESTONE 8', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
@@ -183,7 +189,7 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.towerButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.leftButtonDown() || this.waves.finished) {
+      if (!pointer.leftButtonDown() || this.waves.finished || this.helpPanel.visible) {
         return;
       }
 
@@ -277,6 +283,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private cancelSelection(): void {
+    if (this.helpPanel.visible) {
+      this.toggleHelp();
+      return;
+    }
+
     this.clearTowerInspection();
 
     if (!this.waves.finished) {
@@ -294,7 +305,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (this.waves.finished || !pointer.leftButtonDown()) {
+    if (this.waves.finished || this.helpPanel.visible || !pointer.leftButtonDown()) {
       return;
     }
 
@@ -371,7 +382,7 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.waveButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.leftButtonDown()) {
+      if (pointer.leftButtonDown() && !this.helpPanel.visible) {
         this.waves.startWave();
         this.refreshHud();
       }
@@ -399,6 +410,46 @@ export class GameScene extends Phaser.Scene {
           this.scene.restart();
         }
       });
+  }
+
+  private createHelpControls(): void {
+    this.helpPanel = createHelpPanel(this, () => this.toggleHelp());
+    this.helpButton = this.add
+      .text(786, 540, 'HOW TO PLAY', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#ffffff',
+        backgroundColor: '#33485c',
+        fixedWidth: 148,
+        align: 'center',
+        padding: { x: 8, y: 10 },
+      })
+      .setInteractive({ useHandCursor: true });
+
+    this.helpButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.leftButtonDown()) {
+        this.toggleHelp();
+      }
+    });
+
+    this.add.text(786, 584, 'Help: H / Esc closes', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#aab7bd',
+    });
+  }
+
+  private toggleHelp(event?: KeyboardEvent): void {
+    if (event?.repeat || this.waves.state === 'running') {
+      return;
+    }
+
+    if (!this.helpPanel.visible) {
+      this.cancelSelection();
+    }
+
+    this.helpPanel.setVisible(!this.helpPanel.visible);
+    this.refreshHud();
   }
 
   private spawnEnemy(ageSeconds: number): void {
@@ -502,6 +553,7 @@ export class GameScene extends Phaser.Scene {
   private refreshHud(): void {
     const waves = this.waves;
     const ready = waves.state === 'ready';
+    const waveAvailable = ready && !this.helpPanel.visible;
 
     this.livesText.setText(`LIVES ${waves.lives}`);
     this.matchText.setText(
@@ -510,15 +562,31 @@ export class GameScene extends Phaser.Scene {
     this.waveButton
       .setText(
         ready
-          ? `START WAVE ${waves.waveNumber + 1}`
+          ? this.helpPanel.visible
+            ? 'CLOSE HELP FIRST'
+            : `START WAVE ${waves.waveNumber + 1}`
           : waves.state === 'running'
             ? 'WAVE RUNNING'
             : 'MATCH OVER',
       )
-      .setBackgroundColor(ready ? '#236b88' : '#33485c')
-      .setAlpha(ready ? 1 : 0.55);
+      .setBackgroundColor(waveAvailable ? '#236b88' : '#33485c')
+      .setAlpha(waveAvailable ? 1 : 0.55);
 
-    this.waveButton.input!.enabled = ready;
+    this.waveButton.input!.enabled = waveAvailable;
+    this.towerButton.input!.enabled = !waves.finished && !this.helpPanel.visible;
+    this.towerButton.setAlpha(waves.finished || this.helpPanel.visible ? 0.55 : 1);
+
+    const helpAvailable = waves.state !== 'running';
+    this.helpButton
+      .setText(
+        !helpAvailable
+          ? 'HELP AFTER WAVE'
+          : this.helpPanel.visible
+            ? 'CLOSE HELP'
+            : 'HOW TO PLAY',
+      )
+      .setAlpha(helpAvailable ? 1 : 0.55);
+    this.helpButton.input!.enabled = helpAvailable;
 
     if (ready) {
       this.phaseText.setText(

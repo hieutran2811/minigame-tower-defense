@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 7
+# Mini Tower Defense — Milestone 8
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -28,6 +28,14 @@ build label appear only in development.
 5. After all enemies in a wave are resolved, place more towers or start the
    next wave manually.
 6. Click **RESTART** at any time to reset the entire match.
+7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
+   after the result. Close it with **H**, **Esc**, or the close button. During a
+   wave, the help button is dimmed and reads **HELP AFTER WAVE**.
+
+Help explains the objective, placement colors, tower inspection, manual waves,
+lives, Restart, and current tower stats. Opening it closes build/inspection
+selection and blocks map clicks. Build and Start Wave stay disabled until help
+closes; **RESTART** remains available in the sidebar. Help never pauses a wave.
 
 Outside build mode, left-click a built tower's tile to inspect its range and
 combat stats. The blue range circle stays visible as you move the pointer and is
@@ -131,7 +139,21 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 7 verification status
+### Milestone 8 verification status
+
+The approved M8 scope is in-game instructions. The panel uses existing game
+constants and Phaser display objects, with no dependencies or game-rule changes.
+`createHelpPanel.ts` renders the panel; `GameScene.ts` owns availability and input.
+
+- `npm run test` and `npm run build` were attempted after M8 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. M8 test/build success is not yet confirmed.
+- Source review covered wave gating, map-click blocking, close-button event
+  propagation, Restart availability, and H/Esc listener cleanup.
+- Browser checks are pending: keyboard/button controls, text fit after resizing,
+  click blocking, and repeated Restart with help open. Use the checklist below.
+
+### Milestone 7 verification status (previously recorded)
 
 The approved M7 scope is muzzle, hit, kill, and escape feedback. Implementation
 changes only `Tower.ts`, `Enemy.ts`, `GameScene.ts`, and this README. Effects use
@@ -195,6 +217,17 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Before wave 1, open help using HOW TO PLAY and H. Confirm instructions and
+      tower stats match the game and fit at the normal size and after resizing.
+- [ ] Close with H, Esc, and CLOSE. Holding H should not repeatedly toggle help.
+- [ ] Open help while building/inspecting; selection must clear. Map clicks and
+      clicks on CLOSE must not place/select a tower or start a wave.
+- [ ] During a wave, confirm HELP AFTER WAVE is disabled and H does not open help;
+      placement, movement, combat, and spawn timing must continue normally.
+- [ ] Open help between waves and after victory/defeat. Close it and confirm
+      correct build/Start Wave availability, including BUILD LOCKED after a result.
+- [ ] Click RESTART with help open, then repeat H/Esc several times. Confirm the
+      panel starts closed and one key press causes only one toggle after restart.
 - [ ] Confirm the map dimensions, orthogonal path, sidebar, and crisp graphics.
 - [ ] Check placement previews, occupied/path rejection, Esc, and resizing.
 - [ ] Check the 128px range circle on grass, path, and occupied tiles; it must
@@ -261,11 +294,13 @@ scene input and combat orchestration; scene shutdown owns its display objects.
 M7 adds short muzzle/hit flashes, pixel death bursts, and exit/lives warnings.
 Visual triggers follow existing combat results, while entity removal and match
 timing remain immediate. Scene-owned tweens handle animation and Restart cleanup.
+M8 adds a HOW TO PLAY panel and H/Esc controls, available outside active waves.
+The panel covers the map while Restart remains accessible in the sidebar.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5, M6, and M7 build verification is pending as described above.
+M5 through M8 build verification is pending as described above.
 
 ## Agent workflow and hooks
 
