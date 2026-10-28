@@ -19,7 +19,9 @@ export class GameScene extends Phaser.Scene {
   private towers: Tower[] = [];
   private projectiles: Projectile[] = [];
   private waves!: WaveSystem;
+  private livesText!: Phaser.GameObjects.Text;
   private matchText!: Phaser.GameObjects.Text;
+  private exitFlash!: Phaser.GameObjects.Rectangle;
   private phaseText!: Phaser.GameObjects.Text;
   private waveButton!: Phaser.GameObjects.Text;
   private fpsText?: Phaser.GameObjects.Text;
@@ -96,6 +98,18 @@ export class GameScene extends Phaser.Scene {
     graphics
       .fillStyle(0x202d39)
       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
+
+    const exit = PATH_TILES[PATH_TILES.length - 1];
+    this.exitFlash = this.add
+      .rectangle(
+        (exit.x + 0.5) * TILE,
+        (exit.y + 0.5) * TILE,
+        TILE - 8,
+        TILE - 8,
+        0xff7373,
+      )
+      .setDepth(0.6)
+      .setAlpha(0);
   }
 
   private createHud(): void {
@@ -104,12 +118,17 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 6', {
+    this.add.text(786, 68, 'MILESTONE 7', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
     });
-    this.matchText = this.add.text(786, 112, '', {
+    this.livesText = this.add.text(786, 112, '', {
+      fontFamily: 'monospace',
+      fontSize: '13px',
+      color: '#ffffff',
+    });
+    this.matchText = this.add.text(786, 132, '', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#ffffff',
@@ -401,6 +420,28 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = [];
   }
 
+  private flashEscape(): void {
+    // Restart the visual warning instead of stacking it during a slow frame.
+    this.tweens.killTweensOf(this.exitFlash);
+    this.exitFlash.setAlpha(0.65);
+    this.tweens.add({
+      targets: this.exitFlash,
+      alpha: 0,
+      duration: 240,
+    });
+
+    this.tweens.killTweensOf(this.livesText);
+    this.livesText.setColor('#ff7373').setAlpha(1);
+    this.tweens.add({
+      targets: this.livesText,
+      alpha: 0.35,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+      onComplete: () => this.livesText.setColor('#ffffff'),
+    });
+  }
+
   private finishMatch(): void {
     this.clearProjectiles();
 
@@ -462,8 +503,9 @@ export class GameScene extends Phaser.Scene {
     const waves = this.waves;
     const ready = waves.state === 'ready';
 
+    this.livesText.setText(`LIVES ${waves.lives}`);
     this.matchText.setText(
-      `LIVES ${waves.lives}\nWAVE ${waves.waveNumber}/${waves.totalWaves}\nALIVE ${waves.active}\nKILLS ${waves.kills}`,
+      `WAVE ${waves.waveNumber}/${waves.totalWaves}\nALIVE ${waves.active}\nKILLS ${waves.kills}`,
     );
     this.waveButton
       .setText(
@@ -511,7 +553,13 @@ export class GameScene extends Phaser.Scene {
     // Resolve escaped enemies before selecting targets or applying damage.
     this.enemies = this.enemies.filter((enemy) => {
       if (enemy.finished) {
+        const livesBefore = this.waves.lives;
         this.waves.resolveEnemy('escaped');
+
+        if (this.waves.lives < livesBefore) {
+          this.flashEscape();
+        }
+
         enemy.destroy();
         return false;
       }
@@ -542,6 +590,7 @@ export class GameScene extends Phaser.Scene {
       this.enemies = this.enemies.filter((enemy) => {
         if (enemy.dead) {
           this.waves.resolveEnemy('killed');
+          enemy.showDeathEffect();
           enemy.destroy();
           return false;
         }

@@ -8,9 +8,14 @@ export class Enemy {
   readonly target: CombatTarget;
   private readonly sprite: Phaser.GameObjects.Container;
   private readonly healthBar: Phaser.GameObjects.Rectangle;
+  private readonly hitFlash: Phaser.GameObjects.Rectangle;
   private readonly follower: PathFollower;
+  private displayedHealth = ENEMY_MAX_HEALTH;
 
-  constructor(scene: Phaser.Scene, path: Point[]) {
+  constructor(
+    private readonly scene: Phaser.Scene,
+    path: Point[],
+  ) {
     this.follower = new PathFollower(path, ENEMY_SPEED);
     const follower = this.follower;
     this.target = {
@@ -25,6 +30,7 @@ export class Enemy {
       .rectangle(0, 0, 26, 26, 0x9b5de5)
       .setStrokeStyle(3, 0x352044);
     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
+    this.hitFlash = scene.add.rectangle(0, 0, 26, 26, 0xffffff).setAlpha(0);
     const healthBackground = scene.add.rectangle(0, -23, 30, 5, 0x633545);
     this.healthBar = scene.add
       .rectangle(-15, -23, 30, 5, 0x91ff9e)
@@ -34,6 +40,7 @@ export class Enemy {
       .container(path[0].x, path[0].y, [
         body,
         eyes,
+        this.hitFlash,
         healthBackground,
         this.healthBar,
       ])
@@ -46,7 +53,42 @@ export class Enemy {
   }
 
   refreshHealthBar(): void {
+    if (this.target.health < this.displayedHealth) {
+      this.scene.tweens.killTweensOf(this.hitFlash);
+      this.hitFlash.setAlpha(0.75);
+      this.scene.tweens.add({
+        targets: this.hitFlash,
+        alpha: 0,
+        duration: 120,
+      });
+    }
+
+    this.displayedHealth = this.target.health;
     this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
+  }
+
+  showDeathEffect(): void {
+    const burst = this.scene.add
+      .graphics({ x: this.sprite.x, y: this.sprite.y })
+      .setDepth(4);
+
+    burst
+      .fillStyle(0xc99aff)
+      .fillRect(-10, -10, 6, 6)
+      .fillRect(4, -10, 6, 6)
+      .fillRect(-10, 4, 6, 6)
+      .fillRect(4, 4, 6, 6)
+      .fillStyle(0xffdc73)
+      .fillRect(-2, -2, 4, 4);
+
+    this.scene.tweens.add({
+      targets: burst,
+      alpha: 0,
+      scaleX: 1.8,
+      scaleY: 1.8,
+      duration: 180,
+      onComplete: () => burst.destroy(),
+    });
   }
 
   get finished(): boolean {
@@ -60,6 +102,7 @@ export class Enemy {
   destroy(): void {
     // In-flight shots keep this target reference and expire after its removal.
     this.target.health = 0;
+    this.scene.tweens.killTweensOf(this.hitFlash);
     this.sprite.destroy();
   }
 }

@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 6
+# Mini Tower Defense — Milestone 7
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -89,6 +89,20 @@ They apply damage once and expire when that target is removed. Removing one
 enemy does not clear shots aimed at other enemies. Health bars show each enemy's
 remaining HP.
 
+M7 adds visual feedback without changing combat:
+
+- A tower's muzzle flashes for 100ms when it actually fires.
+- A surviving enemy flashes white for 120ms when its HP decreases. Multiple hits
+  in one frame share one flash; lethal hits show a pixel burst instead.
+- A killed enemy leaves a small pixel burst that fades over 180ms. Escaped enemies
+  and enemies cleared at match end do not produce death bursts.
+- Each actual lost life flashes the exit tile for 240ms and pulses the LIVES text
+  red for 400ms, then restores it. Closely grouped escapes restart the warning.
+
+These effects never apply damage or delay enemy removal. Effects already running
+may finish after the result appears; no new shots or enemies are created. Restart
+clears the scene's display objects and tweens, including all active effects.
+
 Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
 and starting lives are in `src/config/waveConfig.ts`.
 
@@ -117,7 +131,22 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 6 verification status
+### Milestone 7 verification status
+
+The approved M7 scope is muzzle, hit, kill, and escape feedback. Implementation
+changes only `Tower.ts`, `Enemy.ts`, `GameScene.ts`, and this README. Effects use
+Phaser's existing Graphics/Tween support; no dependencies or system logic changed.
+
+- `npm run test` and `npm run build` were attempted after M7 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. M7 test/build success is not yet confirmed.
+- Source review checked actual-shot/HP/life triggers, entity removal, layering,
+  and tween lifecycle. Phaser's scene TweenManager cancels its tweens on shutdown;
+  enemy removal also cancels the enemy's hit flash before destroying its sprite.
+- Browser verification of visual timing, edge towers, result transitions, and
+  Restart during active effects is pending. Use the acceptance checklist below.
+
+### Milestone 6 verification status (previously recorded)
 
 M6 adds tower inspection and path guides. Range and combat stats use the existing
 combat constants. Build mode keeps its placement behavior, including rejection of
@@ -184,6 +213,14 @@ sharpness on other displays still need manual verification.
       remain visible above the markings.
 - [ ] Verify no enemies appear before Start Wave.
 - [ ] Watch several enemies move simultaneously with individual HP bars.
+- [ ] Verify muzzle flashes happen only when a shot is fired, with none while
+      idle or cooling down. Check edge/corner towers do not flash over the sidebar.
+- [ ] Watch surviving enemies flash on actual damage while HP bars stay readable.
+      Expired projectiles must not flash or damage a replacement enemy.
+- [ ] Check one pixel burst per kill at the enemy's last position, including
+      multiple kills in one frame; escapes must not show a death burst.
+- [ ] Start without towers: each lost life must trigger the exit/LIVES warning,
+      then restore the normal LIVES appearance without changing other HUD text.
 - [ ] Check that towers prioritize enemies further along the path when in range.
 - [ ] Verify wave counts are exactly 5, 8, and 12, with one-second spacing.
 - [ ] Verify the next wave waits until the current wave clears and you click Start.
@@ -194,6 +231,10 @@ sharpness on other displays still need manual verification.
 - [ ] Finish a match while inspecting a tower; its range must disappear. Press
       Esc after the result and confirm BUILD LOCKED and match text stay intact.
 - [ ] Restart during play and after each outcome; confirm full state reset.
+- [ ] Restart repeatedly while muzzle/hit/death/escape effects are active. Confirm
+      no old flashes, bursts, or delayed color changes appear in the new match.
+- [ ] After the result, allow current effects to finish; confirm no new shots,
+      damage, spawns, or changes to lives/kills occur.
 - [ ] After Restart, confirm BASIC TOWER and START WAVE 1 are available and
       there is no range preview, tower inspection, or previous result panel.
 - [ ] Repeat in production preview; confirm no FPS/development label.
@@ -217,11 +258,14 @@ existing combat range constant, and statistics use the existing match state.
 M6 adds inspection of built towers and path entry/exit/turn guides. The small
 `src/scenes/drawPathGuides.ts` renderer keeps static ground markings separate from
 scene input and combat orchestration; scene shutdown owns its display objects.
+M7 adds short muzzle/hit flashes, pixel death bursts, and exit/lives warnings.
+Visual triggers follow existing combat results, while entity removal and match
+timing remain immediate. Scene-owned tweens handle animation and Restart cleanup.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 and M6 build verification is pending as described above.
+M5, M6, and M7 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

@@ -6,6 +6,7 @@ import { selectTarget, TowerAttack, type CombatTarget } from '../systems/Combat'
 
 export class Tower extends Phaser.GameObjects.Container {
   private readonly turret: Phaser.GameObjects.Container;
+  private readonly muzzleFlash: Phaser.GameObjects.Rectangle;
   private readonly attack = new TowerAttack(TOWER_RANGE, TOWER_FIRE_INTERVAL);
 
   constructor(scene: Phaser.Scene, tile: Point) {
@@ -21,7 +22,11 @@ export class Tower extends Phaser.GameObjects.Container {
       .rectangle(0, -17, 10, 24, 0xb9e8f5)
       .setStrokeStyle(2, 0x236b88);
 
-    this.turret = scene.add.container(0, 0, [head, barrel]);
+    this.muzzleFlash = scene.add
+      .rectangle(0, -27, 12, 6, 0xffedb5)
+      .setAlpha(0);
+
+    this.turret = scene.add.container(0, 0, [head, barrel, this.muzzleFlash]);
     this.add([base, this.turret]);
     this.setDepth(1);
     scene.add.existing(this);
@@ -44,6 +49,18 @@ export class Tower extends Phaser.GameObjects.Container {
       );
     }
 
-    return this.attack.update(deltaMs / 1000, this, target) ? target : null;
+    if (!this.attack.update(deltaMs / 1000, this, target)) {
+      return null;
+    }
+
+    this.scene.tweens.killTweensOf(this.muzzleFlash);
+    this.muzzleFlash.setAlpha(1);
+    this.scene.tweens.add({
+      targets: this.muzzleFlash,
+      alpha: 0,
+      duration: 100,
+    });
+
+    return target;
   }
 }
