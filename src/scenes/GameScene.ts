@@ -62,6 +62,9 @@ export class GameScene extends Phaser.Scene {
     this.input.on('gameout', this.hidePlacementPreview, this);
     this.input.keyboard?.on('keydown-ESC', this.cancelSelection, this);
     this.input.keyboard?.on('keydown-H', this.toggleHelp, this);
+    this.input.keyboard?.on('keydown-B', this.toggleBuild, this);
+    this.input.keyboard?.on('keydown-N', this.startNextWave, this);
+    this.input.keyboard?.on('keydown-R', this.restartMatch, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off('pointermove', this.updatePlacementPreview, this);
@@ -69,6 +72,9 @@ export class GameScene extends Phaser.Scene {
       this.input.off('gameout', this.hidePlacementPreview, this);
       this.input.keyboard?.off('keydown-ESC', this.cancelSelection, this);
       this.input.keyboard?.off('keydown-H', this.toggleHelp, this);
+      this.input.keyboard?.off('keydown-B', this.toggleBuild, this);
+      this.input.keyboard?.off('keydown-N', this.startNextWave, this);
+      this.input.keyboard?.off('keydown-R', this.restartMatch, this);
     });
   }
 
@@ -124,7 +130,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 8', {
+    this.add.text(786, 68, 'MILESTONE 9', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
@@ -153,7 +159,7 @@ export class GameScene extends Phaser.Scene {
     this.add.text(
       24,
       580,
-      'BASIC TOWER builds. Click built towers to inspect. Esc closes.',
+      'B build / N next wave / R restart / H help / Esc cancel',
       {
         fontFamily: 'monospace',
         fontSize: '13px',
@@ -189,19 +195,8 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.towerButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.leftButtonDown() || this.waves.finished || this.helpPanel.visible) {
-        return;
-      }
-
-      if (this.towerSelected) {
-        this.cancelPlacement();
-      } else {
-        this.clearTowerInspection();
-        this.towerSelected = true;
-        this.towerButton
-          .setText('CANCEL BUILD')
-          .setBackgroundColor('#236b88');
-        this.placementText.setText('Click grass to place.\nEsc to cancel.');
+      if (pointer.leftButtonDown()) {
+        this.toggleBuild();
       }
     });
 
@@ -236,6 +231,27 @@ export class GameScene extends Phaser.Scene {
     this.placementPreview.setMask(previewMask);
     this.towerInspection.setMask(previewMask);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
+  }
+
+  private toggleBuild(event?: KeyboardEvent): void {
+    if (event?.repeat || this.waves.finished || this.helpPanel.visible) {
+      return;
+    }
+
+    if (this.towerSelected) {
+      this.cancelPlacement();
+    } else {
+      this.clearTowerInspection();
+      this.towerSelected = true;
+      this.towerButton
+        .setText('CANCEL BUILD')
+        .setBackgroundColor('#236b88');
+      this.placementText.setText('Click grass to place.\nB or Esc to cancel.');
+
+      if (this.input.manager.isOver) {
+        this.updatePlacementPreview(this.input.activePointer);
+      }
+    }
   }
 
   private pointerTile(pointer: Phaser.Input.Pointer): Point {
@@ -382,9 +398,8 @@ export class GameScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
 
     this.waveButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.leftButtonDown() && !this.helpPanel.visible) {
-        this.waves.startWave();
-        this.refreshHud();
+      if (pointer.leftButtonDown()) {
+        this.startNextWave();
       }
     });
 
@@ -407,9 +422,24 @@ export class GameScene extends Phaser.Scene {
       })
       .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
         if (pointer.leftButtonDown()) {
-          this.scene.restart();
+          this.restartMatch();
         }
       });
+  }
+
+  private startNextWave(event?: KeyboardEvent): void {
+    if (event?.repeat || this.helpPanel.visible || this.waves.state !== 'ready') {
+      return;
+    }
+
+    this.waves.startWave();
+    this.refreshHud();
+  }
+
+  private restartMatch(event?: KeyboardEvent): void {
+    if (!event?.repeat) {
+      this.scene.restart();
+    }
   }
 
   private createHelpControls(): void {

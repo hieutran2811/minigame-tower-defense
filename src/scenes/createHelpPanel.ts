@@ -52,13 +52,13 @@ export function createHelpPanel(
     -320,
     -116,
     [
-      'BUILD    Choose BASIC TOWER, then click empty grass.',
-      '         Green = valid. Red = path or occupied.',
-      'INSPECT  Cancel building, then click a placed tower.',
-      `WAVES    Start each wave manually: ${WAVE_COUNTS.join(' / ')} enemies.`,
+      'BUILD    B / BASIC TOWER selects or cancels building.',
+      '         Click grass. Green = valid; red = blocked.',
+      'INSPECT  Esc cancels building; click a placed tower.',
+      `WAVES    N / START WAVE: ${WAVE_COUNTS.join(' / ')} enemies.`,
       '         Wait until every enemy is defeated or has escaped.',
       'LIVES    Each escape costs 1 life; kills increase KILLS.',
-      'RESTART  Resets the match, including all towers.',
+      'RESTART  R / RESTART resets the match and all towers.',
     ].join('\n'),
     {
       fontFamily: 'monospace',
@@ -75,7 +75,7 @@ export function createHelpPanel(
     { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
   );
   const hint = scene.add
-    .text(0, 140, 'Help is available between waves and after the match.', {
+    .text(0, 140, 'Close help to use B / N. R also works while help is open.', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#aab7bd',

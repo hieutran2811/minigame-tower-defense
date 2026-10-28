@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 8
+# Mini Tower Defense — Milestone 9
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -31,6 +31,19 @@ build label appear only in development.
 7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
    after the result. Close it with **H**, **Esc**, or the close button. During a
    wave, the help button is dimmed and reads **HELP AFTER WAVE**.
+
+Keyboard shortcuts use the same actions as the buttons:
+
+| Key | Action |
+| --- | --- |
+| B | Select/cancel building before or during a wave |
+| N | Start the next wave only when ready |
+| R | Restart at any time, including with help open or after a result |
+| H | Open/close help outside active waves |
+| Esc | Close help or cancel building/inspection |
+
+Holding B, N, R, or H does not repeat the action. With help open, B and N are
+blocked while R still resets the match. After a result, B and N stay locked.
 
 Help explains the objective, placement colors, tower inspection, manual waves,
 lives, Restart, and current tower stats. Opening it closes build/inspection
@@ -139,7 +152,22 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 8 verification status
+### Milestone 9 verification status
+
+The approved M9 scope is B/N/R shortcuts and matching in-game instructions.
+Keyboard and mouse controls share handlers in `GameScene.ts`, preserving existing
+placement, wave-start, and Restart rules. `createHelpPanel.ts` and this README
+document the keys. No dependencies or system logic were changed.
+
+- `npm run test` and `npm run build` were attempted after M9 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. M9 test/build success is not yet confirmed.
+- Source review covered key-repeat guards, help/result restrictions, immediate
+  placement preview when the pointer is over the game, and B/N/R listener cleanup.
+- Browser checks of shortcuts, held keys, mixed mouse/keyboard input, and repeated
+  Restart are pending. Use the checklist below.
+
+### Milestone 8 verification status (previously recorded)
 
 The approved M8 scope is in-game instructions. The panel uses existing game
 constants and Phaser display objects, with no dependencies or game-rule changes.
@@ -217,6 +245,19 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Press B over grass: show building selection/preview immediately. Press B
+      again to cancel, then repeat using BASIC TOWER/CANCEL BUILD. A pointer
+      outside the game must not show a stale placement preview when B is pressed.
+- [ ] Hold B: selection must toggle once per press, including during a wave.
+      Check grass/path/occupied placement and Esc after mixing keyboard and mouse.
+- [ ] Press N when ready: start one wave. Press/hold N during that wave and keep
+      holding until it clears; the next wave must still wait for a new press.
+- [ ] With help open, B/N must leave towers, selection, and wave unchanged. R must
+      restart the whole match and close help, just like the RESTART button.
+- [ ] Press R before/during a wave and after victory/defeat. Hold R and confirm
+      only one reset occurs per press. After a result, B/N must remain inactive.
+- [ ] Restart repeatedly using mouse and R; verify B/N/R/H each act only once per
+      press and that text, buttons, inspection, and all effects reset correctly.
 - [ ] Before wave 1, open help using HOW TO PLAY and H. Confirm instructions and
       tower stats match the game and fit at the normal size and after resizing.
 - [ ] Close with H, Esc, and CLOSE. Holding H should not repeatedly toggle help.
@@ -296,11 +337,13 @@ Visual triggers follow existing combat results, while entity removal and match
 timing remain immediate. Scene-owned tweens handle animation and Restart cleanup.
 M8 adds a HOW TO PLAY panel and H/Esc controls, available outside active waves.
 The panel covers the map while Restart remains accessible in the sidebar.
+M9 adds B/N/R shortcuts using the same scene handlers as their mouse buttons,
+ignores repeated keydown events, and updates help/footer instructions.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M8 build verification is pending as described above.
+M5 through M9 build verification is pending as described above.
 
 ## Agent workflow and hooks
 
