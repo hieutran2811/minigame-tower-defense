@@ -76,5 +76,21 @@ Rendering implemented; automated/browser acceptance and balance playtests pendin
   checks. FPS/development labels remain development-only. No balance conclusions
   are made before playing these runs.
 
+## M15: combat and wave feedback
+
+Implemented as the next visual improvement, awaiting automated/browser acceptance:
+
+- Shaped Basic sparks, compact Rapid bolts, and Longbow arrows turn along their
+  actual homing motion, reusing the existing pure projectile logic.
+- Floating numbers report HP actually removed, combining hits per enemy/frame
+  and excluding overkill, escapes, cleanup, and expired projectiles.
+- One short banner reports the wave number/count after manual start without
+  blocking input, adding a countdown, or delaying the first spawn.
+- Scene-owned text/containers fade and clean up; no new keys, dependencies,
+  profiles, stats, levels, mechanics, or campaign rules.
+- Five feedback tests extend the existing entity suite. npm test/build remain
+  blocked as recorded in the README; clustered readability, scaling, production,
+  and Restart/audio/browser-console verification remain for human review.
+
 Economy, upgrades, selling, backend, and multiplayer are not introduced by this
 roadmap. Further business-rule or dependency changes remain separate review items.

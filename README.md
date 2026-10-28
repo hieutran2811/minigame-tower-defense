@@ -1,4 +1,4 @@
-# The Last Beacon — Milestone 14
+# The Last Beacon — Milestone 15
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -222,6 +222,29 @@ one ambient alpha tween, which can continue behind menus/results; Phaser clears
 scene tweens and objects on Restart/chapter changes. Existing combat flashes and
 audio behavior stay unchanged.
 
+## Combat and wave feedback
+
+Basic fires a square spark with a short trail; Rapid fires a compact green bolt;
+Longbow fires an arrow with a shaft and fletching. Each projectile turns along
+its actual homing travel. These shapes do not add collisions, piercing, splash,
+extra shots, or changes to speed/damage/original-target ownership.
+
+An enemy shows one floating damage number for the HP it lost since the previous
+frame's health-bar refresh. Multiple hits in that frame are combined. A Longbow
+hit on a target with 1 HP displays `-1`, because overkill is not counted. Lethal
+hits also show the final HP removed before the enemy disappears. Escapes, result
+cleanup, and projectiles that expire on an already removed target show no number.
+
+Numbers sit beside the enemy's HP bar, switching to the left near the right map
+edge. Starting/end positions stay bounded near the top edge. They fade upward over 380ms and are
+destroyed afterward. They never change HP or postpone removal, and render below
+placement previews and menus/results. Existing hit/kill/escape audio is unchanged.
+
+Starting a wave manually briefly shows its number and enemy count at the top of
+the map. The banner fades after 830ms and has no input hit area. The first spawn
+and combat proceed immediately; the banner is not an extra countdown or pause.
+Restart/chapter changes clear these scene-owned objects and tweens as before.
+
 ## Combat
 
 | Setting | Value |
@@ -296,7 +319,33 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 14 verification status
+### Milestone 15 verification status
+
+M15 continues the requested visual improvements with distinct projectile shapes,
+actual-HP damage numbers, and a short manual-wave banner. It does not change
+combat algorithms, rules, profiles, levels, economy, dependencies, or input keys.
+
+- `Projectile.ts` replaces its rectangle with a child container and orients it
+  from actual motion. `ProjectileMotion` remains responsible for homing/damage.
+- `Enemy.ts` emits a number only for a decrease in displayed HP. Health-bar
+  refresh combines same-frame hits; death feedback handles the final decrease.
+  Numbers and their cleanup never apply damage or affect enemy/wave resolution.
+- `showWaveBanner.ts` draws one temporary, noninteractive banner from the wave
+  that was just manually started in `GameScene.ts`.
+- Added five entity feedback tests to `EnemyPresentation.test.ts`: combined
+  actual hits/no replay, lethal overkill, removed targets, text bounds/cleanup,
+  and homing arrow orientation with unchanged damage. The existing HP-bar test
+  now checks the hit-flash tween specifically because damage adds its own tween.
+- `npm run test` and `npm run build` were attempted after implementation. Both
+  exited before scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. Tests, TypeScript checking, and build remain unconfirmed.
+- Source review checks hit/removal paths, layering, scene ownership and repeat
+  guards. Actual readability in clustered combat, font fit, production output,
+  scaling and repeated Restart/audio checks still require browser verification.
+- M14's separate ten-file snapshot is prepared in `docs/commits/M14.patch`; the
+  commit guide describes human execution without staging M15 or `package-lock.json`.
+
+### Milestone 14 verification status (previously recorded)
 
 M14 implements the rendering portion of the approved graphics/gameplay polish:
 chapter terrain details, a stronger fortress/beacon, enemy/tower shadows, richer
@@ -506,6 +555,20 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Check Basic/Rapid/Longbow shots have distinct shapes and correct heading,
+      including when targets turn corners. Verify homing, speed, damage-once,
+      and expiry on the original target remain unchanged.
+- [ ] On Guard, watch simultaneous hits combine into one number. A Longbow hit
+      on 1 remaining HP must show `-1`; unchanged HP must not repeat a number.
+      Escapes/result cleanup/expired shots must produce none.
+- [ ] Check numbers remain readable around HP bars and map edges in clustered
+      combat, fade away, and do not cover menus/results or placement previews.
+- [ ] Start each wave via N/button: one brief banner, correct number/count,
+      immediate first spawn, no input blocking, no extra countdown. Hold N and
+      try it during a running wave or with a panel open: no duplicate banner.
+- [ ] Restart/change chapters while arrows, numbers and banners are visible.
+      Confirm old effects disappear, no duplicate input/audio, proper scaling,
+      and no production FPS/development label or browser console errors.
 - [ ] Follow [docs/playtest-M14.md](docs/playtest-M14.md) for the visual/lifecycle
       checks and controlled chapter/type comparisons. Record actual results.
 - [ ] Confirm flat terrain decorations stay buildable, paths and turn arrows stay
@@ -687,11 +750,13 @@ combat algorithms remain unchanged. Economy, upgrades, and selling remain out of
 M14 adds terrain/path-edge details, fortress art, shadows, enemy walking, and
 ambient beacon animation. Combat and level/wave definitions are unchanged; the
 playtest sheet records pending balance and browser verification.
+M15 adds shaped homing projectiles, actual-HP damage numbers, and a manual-wave
+banner. All are presentation; combat algorithms and match rules remain unchanged.
 See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M14 build verification is pending as described above.
+M5 through M15 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

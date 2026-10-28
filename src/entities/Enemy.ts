@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
+import { COLS, TILE } from '../config/gameConfig';
 import type { Point } from '../data/map';
 import type { CombatTarget } from '../systems/Combat';
 import { PathFollower } from '../systems/PathFollower';
@@ -123,6 +124,7 @@ export class Enemy {
         alpha: 0,
         duration: 120,
       });
+      this.showDamage(this.displayedHealth - this.target.health);
     }
 
     this.displayedHealth = this.target.health;
@@ -131,6 +133,8 @@ export class Enemy {
   }
 
   showDeathEffect(): void {
+    this.showDamage(this.displayedHealth - this.target.health);
+    this.displayedHealth = this.target.health;
     const burst = this.scene.add
       .graphics({ x: this.sprite.x, y: this.sprite.y })
       .setDepth(4);
@@ -151,6 +155,31 @@ export class Enemy {
       scaleY: 1.8,
       duration: 180,
       onComplete: () => burst.destroy(),
+    });
+  }
+
+  private showDamage(amount: number): void {
+    if (amount <= 0) {
+      return;
+    }
+
+    const mapWidth = COLS * TILE;
+    const offset = this.sprite.x + 36 > mapWidth - 14 ? -36 : 36;
+    const x = Math.max(14, Math.min(mapWidth - 14, this.sprite.x + offset));
+    const y = Math.max(14, this.sprite.y - 37);
+    const label = this.scene.add
+      .text(x, y, `-${amount}`, {
+        fontFamily: 'monospace', fontSize: '14px', color: '#ffedb5',
+        stroke: '#15202b', strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setDepth(5);
+    this.scene.tweens.add({
+      targets: label,
+      y: Math.max(10, y - 16),
+      alpha: 0,
+      duration: 380,
+      onComplete: () => label.destroy(),
     });
   }
 

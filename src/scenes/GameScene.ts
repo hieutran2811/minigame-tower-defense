@@ -15,6 +15,7 @@ import { createHelpPanel } from './createHelpPanel';
 import { createLevelPanel } from './createLevelPanel';
 import { drawPathGuides } from './drawPathGuides';
 import { drawTerrain } from './drawTerrain';
+import { showWaveBanner } from './showWaveBanner';
 
 export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
@@ -517,6 +518,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.waves.startWave();
+    showWaveBanner(this, this.waves.waveNumber, this.waves.waveSize);
     this.refreshHud();
   }
 
