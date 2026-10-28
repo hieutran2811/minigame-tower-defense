@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 4
+# Mini Tower Defense — Milestone 5
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -19,17 +19,19 @@ build label appear only in development.
 ## Controls
 
 1. Click **BASIC TOWER**, then left-click empty grass to place a tower.
-2. Green previews mark valid tiles; red previews mark path/occupied tiles.
-3. Selection stays active for more placements. **Esc** or the tower button
+2. Green previews mark valid tiles; red previews mark path/occupied tiles. The
+   circle shows the tower's 128px range and is clipped to the map bounds.
+3. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
    cancels selection.
-4. Click **START WAVE** when ready. It is disabled while the wave is running.
+4. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
+   running, and shows **MATCH OVER** after victory/defeat.
 5. After all enemies in a wave are resolved, place more towers or start the
    next wave manually.
 6. Click **RESTART** at any time to reset the entire match.
 
 Sidebar/footer clicks never place towers. Placement is allowed before and during
-waves, and stops after victory/defeat. Towers have no cost in M4. Progress and
-placement are not saved.
+waves, and stops after victory/defeat, when the tower button shows **BUILD LOCKED**.
+Towers have no cost. Progress and placement are not saved.
 
 ## Waves, lives, and outcomes
 
@@ -55,6 +57,7 @@ spawned and have either died or escaped. The next wave never starts automaticall
 
 The sidebar shows lives, wave number, active enemies, kills, and tower count.
 The footer reports the wave's spawn progress.
+The result panel shows the wave reached, kills, remaining lives, and towers built.
 
 ## Combat
 
@@ -105,7 +108,18 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Automated checks and results
+### Milestone 5 verification status
+
+M5 changes presentation only: range preview, button states, and result statistics.
+No dependencies, combat settings, wave rules, or system logic were changed.
+
+- `npm run test` and `npm run build` were attempted in the agent environment.
+  Both exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. M5 test/build success is not yet confirmed.
+- Browser verification of M5 is still pending. Run the commands above locally,
+  then use the acceptance checklist below in both development and production.
+
+### Milestone 4 baseline results (previously recorded)
 
 - **64 unit tests passed** across five files.
 - **TypeScript check and production build passed**.
@@ -132,6 +146,10 @@ sharpness on other displays still need manual verification.
 
 - [ ] Confirm the map dimensions, orthogonal path, sidebar, and crisp graphics.
 - [ ] Check placement previews, occupied/path rejection, Esc, and resizing.
+- [ ] Check the 128px range circle on grass, path, and occupied tiles; it must
+      stay inside the map and disappear on Esc, pointer exit, and match end.
+- [ ] Check BASIC TOWER / CANCEL BUILD / BUILD LOCKED states and the dimmed,
+      disabled wave button during play and after the result.
 - [ ] Verify no enemies appear before Start Wave.
 - [ ] Watch several enemies move simultaneously with individual HP bars.
 - [ ] Check that towers prioritize enemies further along the path when in range.
@@ -139,8 +157,11 @@ sharpness on other displays still need manual verification.
 - [ ] Verify the next wave waits until the current wave clears and you click Start.
 - [ ] Play through victory using the example layout.
 - [ ] Play through defeat without towers and check one lost life per escape.
+- [ ] Compare the result panel's wave, kills, lives, and towers with the sidebar.
 - [ ] Check that placement and Start Wave stop after the result.
 - [ ] Restart during play and after each outcome; confirm full state reset.
+- [ ] After Restart, confirm BASIC TOWER and START WAVE 1 are available and
+      there is no range preview or previous result panel.
 - [ ] Repeat in production preview; confirm no FPS/development label.
 - [ ] Confirm there are no browser console errors.
 
@@ -156,10 +177,14 @@ sharpness on other displays still need manual verification.
 ## Scope and build notes
 
 M4 adds waves, multiple enemies, lives, victory/defeat, and Restart.
+M5 adds a map-clipped range preview, explicit build/wave button states, Restart
+hover feedback, and match statistics on the result panel. The preview uses the
+existing combat range constant, and statistics use the existing match state.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
-No dependencies were added. Vite still warns about a JavaScript chunk larger than
-500 kB because it includes Phaser; the production build succeeds.
+No dependencies were added. The previously recorded M4 build passed with Vite's
+warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+M5 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

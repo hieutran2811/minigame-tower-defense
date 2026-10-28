@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { TOWER_RANGE } from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 import { PATH_TILES, type Point } from '../data/map';
@@ -96,7 +97,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 4', {
+    this.add.text(786, 68, 'MILESTONE 5', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
@@ -159,7 +160,9 @@ export class GameScene extends Phaser.Scene {
         this.cancelPlacement();
       } else {
         this.towerSelected = true;
-        this.towerButton.setBackgroundColor('#236b88');
+        this.towerButton
+          .setText('CANCEL BUILD')
+          .setBackgroundColor('#236b88');
         this.placementText.setText('Click grass to place.\nEsc to cancel.');
       }
     });
@@ -182,6 +185,12 @@ export class GameScene extends Phaser.Scene {
       color: '#b9e8f5',
     });
     this.placementPreview = this.add.graphics().setDepth(10);
+    // Keep the range circle inside the map, away from the sidebar and footer.
+    const mapMask = this.add.graphics().setVisible(false);
+    mapMask.fillStyle(0xffffff).fillRect(0, 0, COLS * TILE, ROWS * TILE);
+    const previewMask = mapMask.createGeometryMask();
+    this.placementPreview.setMask(previewMask);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
   }
 
   private pointerTile(pointer: Phaser.Input.Pointer): Point {
@@ -206,8 +215,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     const color = status === 'available' ? 0x91ff9e : 0xff7373;
+    const centerX = (tile.x + 0.5) * TILE;
+    const centerY = (tile.y + 0.5) * TILE;
 
     this.placementPreview
+      .fillStyle(color, 0.06)
+      .fillCircle(centerX, centerY, TOWER_RANGE)
+      .lineStyle(1, color, 0.8)
+      .strokeCircle(centerX, centerY, TOWER_RANGE)
       .fillStyle(color, 0.25)
       .fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE)
       .lineStyle(2, color)
@@ -220,7 +235,9 @@ export class GameScene extends Phaser.Scene {
 
   private cancelPlacement(): void {
     this.towerSelected = false;
-    this.towerButton.setBackgroundColor('#33485c');
+    this.towerButton
+      .setText('BASIC TOWER')
+      .setBackgroundColor('#33485c');
     this.placementText.setText('Select BASIC TOWER\nto start building.');
     this.hidePlacementPreview();
   }
@@ -282,6 +299,12 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 8, y: 8 },
       })
       .setInteractive({ useHandCursor: true })
+      .on('pointerover', function (this: Phaser.GameObjects.Text) {
+        this.setBackgroundColor('#236b88');
+      })
+      .on('pointerout', function (this: Phaser.GameObjects.Text) {
+        this.setBackgroundColor('#33485c');
+      })
       .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
         if (pointer.leftButtonDown()) {
           this.scene.restart();
@@ -317,22 +340,39 @@ export class GameScene extends Phaser.Scene {
 
     this.enemies = [];
     this.cancelPlacement();
-    this.towerButton.disableInteractive();
+    this.towerButton
+      .setText('BUILD LOCKED')
+      .setAlpha(0.55)
+      .disableInteractive();
     this.placementText.setText('Match finished.\nPress RESTART.');
 
     const won = this.waves.state === 'won';
     const panel = this.add
-      .rectangle(0, 0, 480, 180, 0x15202b, 0.96)
+      .rectangle(0, 0, 480, 260, 0x15202b, 0.96)
       .setStrokeStyle(3, won ? 0x91ff9e : 0xff7373);
     const title = this.add
-      .text(0, -35, won ? 'VICTORY' : 'DEFEAT', {
+      .text(0, -85, won ? 'VICTORY' : 'DEFEAT', {
         fontFamily: 'monospace',
         fontSize: '30px',
         color: won ? '#91ff9e' : '#ff7373',
       })
       .setOrigin(0.5);
+    const stats = this.add
+      .text(
+        0,
+        -5,
+        `WAVE ${this.waves.waveNumber}/${this.waves.totalWaves}    KILLS ${this.waves.kills}\nLIVES ${this.waves.lives}     TOWERS ${this.placement.count}`,
+        {
+          fontFamily: 'monospace',
+          fontSize: '18px',
+          color: '#b4d9bc',
+          align: 'center',
+          lineSpacing: 12,
+        },
+      )
+      .setOrigin(0.5);
     const detail = this.add
-      .text(0, 25, 'Press RESTART to play again.', {
+      .text(0, 90, 'Press RESTART to play again.', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#ffffff',
@@ -342,6 +382,7 @@ export class GameScene extends Phaser.Scene {
     this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, [
       panel,
       title,
+      stats,
       detail,
     ]).setDepth(20);
   }
@@ -359,9 +400,10 @@ export class GameScene extends Phaser.Scene {
           ? `START WAVE ${waves.waveNumber + 1}`
           : waves.state === 'running'
             ? 'WAVE RUNNING'
-            : 'FINISHED',
+            : 'MATCH OVER',
       )
-      .setBackgroundColor(ready ? '#236b88' : '#33485c');
+      .setBackgroundColor(ready ? '#236b88' : '#33485c')
+      .setAlpha(ready ? 1 : 0.55);
 
     this.waveButton.input!.enabled = ready;
 
