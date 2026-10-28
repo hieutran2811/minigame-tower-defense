@@ -1,11 +1,7 @@
 import type Phaser from 'phaser';
-import {
-  TOWER_DAMAGE,
-  TOWER_FIRE_INTERVAL,
-  TOWER_RANGE,
-} from '../config/combatConfig';
 import { COLS, ROWS, TILE } from '../config/gameConfig';
 import { ENEMY_TYPES } from '../config/enemyConfig';
+import { TOWER_KINDS, TOWER_TYPES } from '../config/towerConfig';
 import { STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 
 export function createHelpPanel(
@@ -53,7 +49,7 @@ export function createHelpPanel(
     -320,
     -116,
     [
-      'BUILD    B selects/cancels building, then click empty ground.',
+      'BUILD    Choose BASIC/RAPID/BOW; B builds the selected type.',
       '         Green = valid; red = blocked. Esc cancels building.',
       'INSPECT  Cancel building, then click a placed tower.',
       `WAVES    N starts ${WAVE_COUNTS.join(' / ')} enemies; wait until each wave clears.`,
@@ -80,10 +76,24 @@ export function createHelpPanel(
       fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4,
     },
   );
+  const towerLegend = scene.add.text(16, -2, 'TOWERS (range / interval / damage)', {
+    fontFamily: 'monospace', fontSize: '12px', color: '#f5e6ae',
+  });
+  const towerStats = scene.add.text(
+    16,
+    18,
+    TOWER_KINDS.map((kind) => {
+      const profile = TOWER_TYPES[kind];
+      return `${profile.label.padEnd(7)} ${profile.range}px / ${profile.interval}s / ${profile.damage}`;
+    }).join('\n'),
+    {
+      fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', lineSpacing: 5,
+    },
+  );
   const stats = scene.add.text(
     -320,
     102,
-    `Basic tower: ${TOWER_RANGE}px range / ${TOWER_FIRE_INTERVAL}s per shot / ${TOWER_DAMAGE} damage`,
+    'B toggles building. Change type while building to update the preview.',
     { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
   );
   const hint = scene.add
@@ -131,6 +141,8 @@ export function createHelpPanel(
       instructions,
       enemyLegend,
       enemyStats,
+      towerLegend,
+      towerStats,
       stats,
       hint,
       closeButton,

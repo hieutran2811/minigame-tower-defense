@@ -42,12 +42,20 @@ Implemented in code, awaiting automated/browser acceptance:
 
 ## M13: tower choices
 
-- Keep Basic Tower unchanged as a reference.
-- Add contrasting options such as a short-range rapid tower and a long-range,
-  slower tower; review range/cadence/damage tradeoffs against M12 enemies.
-- Extend selection, preview, inspection, and help to display each tower's stats.
-- Introduce special mechanics such as splash or slowing only as an explicitly
-  reviewed change, with tests for target ownership and effect rules.
+Implemented in code, awaiting automated/browser acceptance:
+
+- Basic stays 128px / 1s / 1 damage. Rapid starts at 96px / 0.4s / 1 damage;
+  Longbow starts at 192px / 1.5s / 2 damage. All retain free placement.
+- Three type buttons choose the profile used by B / BUILD. Switching during
+  building updates preview; inspecting uses the placed tower's own profile.
+- Green twin-barrel and amber bow silhouettes plus shot colors distinguish the
+  additions. Help lists all profiles; Restart/chapter changes select Basic again.
+- Reuse pure targeting/cooldown/projectile algorithms. Damage comes from the
+  firing tower; projectile speed, original-target ownership, and all waves stay
+  unchanged. No splash, slowing, piercing, economy, upgrades, or selling.
+- Entity-level tests stub drawing but exercise actual Tower/Projectile wiring.
+  Test/build execution is blocked as recorded in the README. Browser text fit,
+  controls, and balance against M12 enemies remain for human acceptance.
 
 ## M14: graphics and gameplay polish
 

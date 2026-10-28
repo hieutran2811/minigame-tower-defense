@@ -1,4 +1,4 @@
-# The Last Beacon — Milestone 12
+# The Last Beacon — Milestone 13
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -20,9 +20,10 @@ build label appear only in development.
 
 1. On first launch, choose **PLAY** in the story menu, or press **Esc** to start
    on Border Watch. No wave starts automatically.
-2. Click **BASIC TOWER**, then left-click empty ground to place a tower.
+2. Choose **BASIC**, **RAPID**, or **BOW** in the sidebar, then click **BUILD** or
+   press **B** and left-click empty ground to place that type of tower.
 3. Green previews mark valid tiles; red previews mark path/occupied tiles. The
-   circle shows the tower's 128px range and is clipped to the map bounds.
+   circle shows the selected type's range and is clipped to the map bounds.
 4. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
    cancels selection.
 5. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
@@ -42,7 +43,7 @@ Keyboard shortcuts use the same actions as the buttons:
 
 | Key | Action |
 | --- | --- |
-| B | Select/cancel building before or during a wave |
+| B | Select/cancel building the chosen tower type before or during a wave |
 | N | Start the next wave only when ready |
 | R | Restart at any time, including with help open or after a result |
 | H | Open/close help outside active waves |
@@ -53,8 +54,8 @@ blocked while R still resets the match. After a result, B and N stay locked.
 With the level menu open, B/N/H are blocked; R still restarts the current map.
 
 Help explains the objective, placement colors, tower inspection, manual waves,
-lives, Restart, and current tower stats. Opening it closes build/inspection
-selection and blocks map clicks. Build and Start Wave stay disabled until help
+lives, Restart, enemy stats, and all three tower profiles. Opening it closes
+build/inspection selection and blocks map clicks. Build and Start Wave stay disabled until help
 closes; **RESTART** remains available in the sidebar. Help never pauses a wave.
 
 Outside build mode, left-click a built tower's tile to inspect its range and
@@ -165,13 +166,46 @@ enemy's kind and spawn age; its own speed determines how far it has moved. Each
 chapter still uses 5/8/12 enemies, immediate first spawn, and one-second spacing.
 Restart/replay starts the same lists afresh, with no individual respawns.
 
+## Tower choices
+
+| Type | Range | Shot interval | Damage | Appearance |
+| --- | --- | --- | --- | --- |
+| Basic | 128px | 1s | 1 | Original cyan head and single barrel |
+| Rapid | 96px | 0.4s | 1 | Green diamond head and twin barrels |
+| Longbow (BOW) | 192px | 1.5s | 2 | Amber head, slim barrel and bow limbs |
+
+Pick a type with the three sidebar buttons, then use B / BUILD to toggle building.
+Changing type while building keeps build mode active and updates the range
+preview immediately. Esc cancels building while keeping the chosen type.
+Choosing a type clears inspection; inspecting a placed tower shows that tower's
+own range, cadence, and damage rather than the type currently chosen for building.
+
+The sidebar stats describe the type chosen for building. The blue inspection
+circle and text beneath those stats describe the placed tower you clicked.
+Choosing another type never converts existing towers or changes their cooldowns
+or in-flight shots. Restart and chapter selection reset the choice to Basic.
+
+Type buttons and building are available before/during waves, blocked by open
+help/level panels, and locked after a result. All kinds use the existing empty
+ground/path/occupied-tile rules and cost nothing. There are no upgrades or sales.
+
+Each tower has its own cooldown, aims by path progress, and fires one projectile
+at a time. Both Rapid barrels are visual; a shot still produces one projectile.
+Longbow deals two damage to its original target, without piercing or splash.
+Projectile speed stays 320px/s for every kind; colors distinguish their shots.
+
+These HP/range/cadence interactions are initial balance values, especially with
+free placement. Play through the mixed-enemy chapters before accepting balance;
+the options are not claimed to have equal strength. Basic remains the reference.
+Profiles and the sidebar order are in `src/config/towerConfig.ts`.
+
 ## Combat
 
 | Setting | Value |
 | --- | --- |
-| Tower range | 128px, including the boundary |
-| Fire interval | 1 second per tower |
-| Damage | 1 HP per projectile impact |
+| Basic tower range | 128px, including the boundary |
+| Basic fire interval | 1 second per tower |
+| Basic damage | 1 HP per projectile impact |
 | Basic enemy health | 3 HP |
 | Basic enemy speed | 95px/second |
 | Projectile speed | 320px/second |
@@ -209,13 +243,14 @@ events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
 escape warning replaces other active tones so the lost life remains audible.
 
 Basic combat constants are in `src/config/combatConfig.ts`; enemy profiles are in
-`src/config/enemyConfig.ts`. Baseline wave counts, spawn interval, and starting
-lives are in `src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
+`src/config/enemyConfig.ts` and tower profiles in `src/config/towerConfig.ts`.
+Baseline wave counts, spawn interval, and starting lives are in
+`src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
 `src/data/levels.ts`.
 
 ## Quick play checks
 
-On Border Watch, test victory by placing towers on these zero-based tiles:
+On Border Watch, choose Basic and test victory with these zero-based tiles:
 
 ```text
 (0,2) (1,2) (2,2) (3,2)
@@ -238,7 +273,35 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 12 verification status
+### Milestone 13 verification status
+
+M13 follows the tower-choice roadmap: Basic stays unchanged; Rapid and Longbow
+add contrasting range/cadence/damage profiles, procedural shapes, and shot colors.
+The sidebar adds type selection, with matching build previews, inspection, and
+help. No dependencies, economy, special attack mechanics, or enemy/wave changes
+were added.
+
+- `Tower` creates its own `TowerAttack` from its profile. `Projectile` receives
+  that firing tower's profile and captures damage in `ProjectileMotion`, so
+  selecting another type does not affect existing towers or projectiles.
+- Targeting, cooldown, and projectile algorithms in `src/systems/Combat.ts` and
+  all wave/path/life rules stay unchanged. Existing constructors default to Basic.
+- Added 11 `TowerTypes.test.ts` cases using actual Tower/Projectile entities with
+  drawing-only Phaser stubs: per-kind range boundaries, cadence, damage-once,
+  slow frames, default Basic compatibility, independent cooldowns, progress/tie
+  targeting, and original-target ownership after leaving range or dying.
+- `npm run test` and `npm run build` were attempted after the implementation.
+  Both exited before scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. The tests, TypeScript check, and build are unconfirmed.
+- Source review covers profile propagation, type-switch and panel/result gating,
+  range masking, placed-tower inspection, and Restart defaults. Drawing stubs do
+  not verify actual rendering; browser layout, controls, audio cleanup, and
+  balance need the manual checks below.
+- The M12 snapshot is available separately in `docs/commits/M12.patch`; it excludes
+  M13 and the existing `package-lock.json` changes. Follow the commit preparation
+  guide in `docs/commits/README.md` for human terminal execution.
+
+### Milestone 12 verification status (previously recorded)
 
 M12 implements Runner/Guard profiles and silhouettes, chapter wave composition,
 per-kind speed/HP/health bars, and next-wave/help information. Basic remains at
@@ -394,6 +457,25 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Confirm Basic is initially selected and selected again after Restart or
+      chapter selection. B/BUILD should place that type and Esc cancel building.
+- [ ] Choose Rapid and BOW before and during waves. While building, change type:
+      preview should immediately change to 96px/192px without leaving build mode.
+      Check previews and inspection circles stay clipped at map edges/resizing.
+- [ ] Place all three kinds; check recognizable shapes and projectile colors.
+      Twin Rapid barrels must produce one projectile per shot, not two.
+- [ ] Inspect each placed kind after choosing another type. Verify the blue range
+      circle and inspection text match the placed tower, while the sidebar stats
+      above describe the chosen build type. Choosing a type clears inspection.
+- [ ] Check Basic remains 128px/1s/1 damage, Rapid is 96px/0.4s/1 damage, and
+      Longbow is 192px/1.5s/2 damage. A full-health Runner needs one Longbow hit;
+      a Guard needs four. Shots stay on their original live target outside range.
+- [ ] Mix all kinds and verify cooldowns stay independent, progress/tie targeting
+      is unchanged, and slow frames do not queue bursts. Review chapter difficulty
+      with free placement before accepting the initial balance values.
+- [ ] Open help/levels and finish a match: type selection/build must be blocked.
+      Check path/occupied-tile rejection, repeated Restart, text fit, audio, and
+      no duplicate actions or browser console errors.
 - [ ] Confirm Border Watch still has 25 Basic enemies and the example tower
       layout works as before. Check unchanged Basic HP/speed and tower stats.
 - [ ] In Whispering Grove, compare the ready footer with the table above. Watch
@@ -509,7 +591,7 @@ sharpness on other displays still need manual verification.
 
 ## Project structure
 
-- `src/config`: dimensions, combat/enemy profiles, and wave/life settings.
+- `src/config`: dimensions, enemy/tower profiles, and combat/wave/life settings.
 - `src/data`: chapter stories, palettes, paths, and ordered enemy wave lists.
 - `src/systems`: pure movement, placement, combat, and wave/match logic.
 - `src/entities`: Phaser enemy, tower, and projectile presentation.
@@ -541,12 +623,14 @@ beacon gate, and manual next chapter. Combat and waves remain the same per map.
 M12 adds Runner/Guard profiles, distinct enemy silhouettes, normalized health bars,
 chapter-specific enemy lists, and next-wave/help composition information. Targeting,
 projectile damage/ownership, spawning intervals, lives, and outcomes are unchanged.
-Tower variety is planned next; economy, upgrades, and selling remain out of scope.
+M13 adds Rapid/Longbow tower profiles, type selection, per-kind previews/inspection,
+procedural silhouettes, shot colors, and damage/cadence. Basic and the shared
+combat algorithms remain unchanged. Economy, upgrades, and selling remain out of scope.
 See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M12 build verification is pending as described above.
+M5 through M13 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

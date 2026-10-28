@@ -1,11 +1,7 @@
 import Phaser from 'phaser';
-import {
-  TOWER_DAMAGE,
-  TOWER_FIRE_INTERVAL,
-  TOWER_RANGE,
-} from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
+import { TOWER_KINDS, TOWER_TYPES, type TowerKind } from '../config/towerConfig';
 import { SPAWN_INTERVAL, STARTING_LIVES } from '../config/waveConfig';
 import { LEVELS, type LevelDefinition } from '../data/levels';
 import type { Point } from '../data/map';
@@ -43,6 +39,9 @@ export class GameScene extends Phaser.Scene {
   private placementPreview!: Phaser.GameObjects.Graphics;
   private towerInspection!: Phaser.GameObjects.Graphics;
   private towerButton!: Phaser.GameObjects.Text;
+  private towerTypeButtons: Phaser.GameObjects.Text[] = [];
+  private towerStatsText!: Phaser.GameObjects.Text;
+  private selectedTowerKind: TowerKind = 'basic';
   private placementText!: Phaser.GameObjects.Text;
   private towerCountText!: Phaser.GameObjects.Text;
   private towerSelected = false;
@@ -63,6 +62,7 @@ export class GameScene extends Phaser.Scene {
       STARTING_LIVES,
     );
     this.towerSelected = false;
+    this.selectedTowerKind = 'basic';
     this.towers = [];
     this.enemies = [];
     this.projectiles = [];
@@ -220,15 +220,30 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPlacementControls(): void {
+    this.towerTypeButtons = TOWER_KINDS.map((kind, index) => {
+      const button = this.add
+        .text(786 + index * 50, 208, TOWER_TYPES[kind].shortLabel, {
+          fontFamily: 'monospace', fontSize: '11px', color: '#ffffff',
+          backgroundColor: '#33485c', fixedWidth: 48, align: 'center',
+          padding: { x: 2, y: 6 },
+        })
+        .setInteractive({ useHandCursor: true });
+      button.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer.leftButtonDown()) {
+          this.selectTowerKind(kind);
+        }
+      });
+      return button;
+    });
     this.towerButton = this.add
-      .text(786, 216, 'BASIC TOWER', {
+      .text(786, 242, 'BUILD BASIC', {
         fontFamily: 'monospace',
-        fontSize: '14px',
+        fontSize: '13px',
         color: '#ffffff',
         backgroundColor: '#33485c',
         fixedWidth: 148,
         align: 'center',
-        padding: { x: 8, y: 10 },
+        padding: { x: 8, y: 8 },
       })
       .setInteractive({ useHandCursor: true });
 
@@ -238,19 +253,19 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(
+    this.towerStatsText = this.add.text(
       786,
-      266,
-      `${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG`,
+      282,
+      '',
       {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: '11px',
         color: '#b4d9bc',
       },
     );
-    this.placementText = this.add.text(786, 300, 'Select BASIC TOWER\nto start building.', {
+    this.placementText = this.add.text(786, 302, 'Choose type, then\nB / BUILD to place.', {
       fontFamily: 'monospace',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ffffff',
       wordWrap: { width: 156 },
       lineSpacing: 5,
@@ -271,6 +286,50 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
   }
 
+  private selectTowerKind(kind: TowerKind): void {
+    if (this.waves.finished || this.helpPanel.visible || this.levelPanel.visible) {
+      return;
+    }
+
+    this.selectedTowerKind = kind;
+    this.clearTowerInspection();
+    this.refreshTowerControls();
+    this.placementText.setText(
+      this.towerSelected
+        ? 'Click empty ground.\nB or Esc to cancel.'
+        : 'Type selected.\nB / BUILD to place.',
+    );
+
+    if (this.input.manager.isOver) {
+      this.updatePlacementPreview(this.input.activePointer);
+    }
+  }
+
+  private refreshTowerControls(): void {
+    const available =
+      !this.waves.finished && !this.helpPanel.visible && !this.levelPanel.visible;
+    const profile = TOWER_TYPES[this.selectedTowerKind];
+    this.towerStatsText.setText(`${profile.range}px / ${profile.interval}s / ${profile.damage} DMG`);
+
+    this.towerTypeButtons.forEach((button, index) => {
+      button
+        .setBackgroundColor(TOWER_KINDS[index] === this.selectedTowerKind ? '#236b88' : '#33485c')
+        .setAlpha(available ? 1 : 0.55);
+      button.input!.enabled = available;
+    });
+    this.towerButton
+      .setText(
+        this.waves.finished
+          ? 'BUILD LOCKED'
+          : this.towerSelected
+            ? 'CANCEL BUILD'
+            : `BUILD ${profile.label}`,
+      )
+      .setBackgroundColor(this.towerSelected ? '#236b88' : '#33485c')
+      .setAlpha(available ? 1 : 0.55);
+    this.towerButton.input!.enabled = available;
+  }
+
   private toggleBuild(event?: KeyboardEvent): void {
     if (
       event?.repeat || this.waves.finished || this.helpPanel.visible ||
@@ -284,9 +343,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.clearTowerInspection();
       this.towerSelected = true;
-      this.towerButton
-        .setText('CANCEL BUILD')
-        .setBackgroundColor('#236b88');
+      this.refreshTowerControls();
       this.placementText.setText('Click empty ground.\nB or Esc to cancel.');
 
       if (this.input.manager.isOver) {
@@ -319,12 +376,13 @@ export class GameScene extends Phaser.Scene {
     const color = status === 'available' ? 0x91ff9e : 0xff7373;
     const centerX = (tile.x + 0.5) * TILE;
     const centerY = (tile.y + 0.5) * TILE;
+    const range = TOWER_TYPES[this.selectedTowerKind].range;
 
     this.placementPreview
       .fillStyle(color, 0.06)
-      .fillCircle(centerX, centerY, TOWER_RANGE)
+      .fillCircle(centerX, centerY, range)
       .lineStyle(1, color, 0.8)
-      .strokeCircle(centerX, centerY, TOWER_RANGE)
+      .strokeCircle(centerX, centerY, range)
       .fillStyle(color, 0.25)
       .fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE)
       .lineStyle(2, color)
@@ -359,10 +417,8 @@ export class GameScene extends Phaser.Scene {
 
   private cancelPlacement(): void {
     this.towerSelected = false;
-    this.towerButton
-      .setText('BASIC TOWER')
-      .setBackgroundColor('#33485c');
-    this.placementText.setText('Select BASIC TOWER\nto start building.');
+    this.refreshTowerControls();
+    this.placementText.setText('Choose type, then\nB / BUILD to place.');
     this.hidePlacementPreview();
   }
 
@@ -396,14 +452,15 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    const profile = tower.profile;
     this.towerInspection
       .fillStyle(0x7eddf5, 0.08)
-      .fillCircle(tower.x, tower.y, TOWER_RANGE)
+      .fillCircle(tower.x, tower.y, profile.range)
       .lineStyle(2, 0x7eddf5, 0.9)
-      .strokeCircle(tower.x, tower.y, TOWER_RANGE)
+      .strokeCircle(tower.x, tower.y, profile.range)
       .strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
     this.placementText.setText(
-      `BASIC TOWER\n${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG\nEsc to close.`,
+      `${profile.label} TOWER\n${profile.range}px / ${profile.interval}s\n${profile.damage} DMG / Esc closes.`,
     );
   }
 
@@ -425,7 +482,7 @@ export class GameScene extends Phaser.Scene {
     } else if (status === 'occupied') {
       this.placementText.setText('This tile already\nhas a tower.');
     } else if (this.placement.place(tile)) {
-      this.towers.push(new Tower(this, tile));
+      this.towers.push(new Tower(this, tile, this.selectedTowerKind));
       this.towerCountText.setText(`TOWERS  ${this.placement.count}`);
       this.placementText.setText('Tower placed.\nChoose another tile.');
     }
@@ -768,8 +825,7 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(waveAvailable ? 1 : 0.55);
 
     this.waveButton.input!.enabled = waveAvailable;
-    this.towerButton.input!.enabled = !waves.finished && !panelOpen;
-    this.towerButton.setAlpha(waves.finished || panelOpen ? 0.55 : 1);
+    this.refreshTowerControls();
 
     const helpAvailable = waves.state !== 'running' && !this.levelPanel.visible;
     const helpLabel = this.levelPanel.visible
@@ -854,7 +910,7 @@ export class GameScene extends Phaser.Scene {
         const target = tower.updateAttack(delta, targets);
 
         if (target) {
-          this.projectiles.push(new Projectile(this, tower, target));
+          this.projectiles.push(new Projectile(this, tower, target, tower.profile));
           this.combatAudio?.play('shot');
         }
       }
