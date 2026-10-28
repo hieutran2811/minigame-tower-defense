@@ -1,15 +1,18 @@
 import type Phaser from 'phaser';
 import { TILE } from '../config/gameConfig';
-import { PATH_TILES } from '../data/map';
+import { PATH_TILES, type Point } from '../data/map';
 
-export function drawPathGuides(scene: Phaser.Scene): void {
+export function drawPathGuides(
+  scene: Phaser.Scene,
+  path: readonly Point[] = PATH_TILES,
+): void {
   // Ground markings stay below towers and enemies.
   const graphics = scene.add.graphics().setDepth(0.5);
 
-  for (let index = 1; index < PATH_TILES.length - 1; index++) {
-    const previous = PATH_TILES[index - 1];
-    const current = PATH_TILES[index];
-    const next = PATH_TILES[index + 1];
+  for (let index = 1; index < path.length - 1; index++) {
+    const previous = path[index - 1];
+    const current = path[index];
+    const next = path[index + 1];
     const dx = next.x - current.x;
     const dy = next.y - current.y;
 
@@ -29,10 +32,23 @@ export function drawPathGuides(scene: Phaser.Scene): void {
       .strokePath();
   }
 
+  const exit = path[path.length - 1];
+  const gateX = exit.x * TILE;
+  const gateY = exit.y * TILE;
+  graphics
+    .fillStyle(0x33485c)
+    .fillRect(gateX + 16, gateY + 28, 32, 24)
+    .fillRect(gateX + 12, gateY + 22, 10, 30)
+    .fillRect(gateX + 42, gateY + 22, 10, 30)
+    .fillStyle(0x15202b)
+    .fillRect(gateX + 28, gateY + 39, 8, 13)
+    .fillStyle(0xf5e6ae)
+    .fillRect(gateX + 29, gateY + 23, 6, 8);
+
   const endpoints = [
-    { tile: PATH_TILES[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
+    { tile: path[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
     {
-      tile: PATH_TILES[PATH_TILES.length - 1],
+      tile: exit,
       label: 'OUT',
       color: 0x873d34,
       textColor: '#ffe1d8',

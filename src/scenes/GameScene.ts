@@ -6,7 +6,8 @@ import {
 } from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
-import { PATH_TILES, type Point } from '../data/map';
+import { LEVELS, type LevelDefinition } from '../data/levels';
+import type { Point } from '../data/map';
 import { CombatAudio } from '../entities/CombatAudio';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
@@ -14,6 +15,7 @@ import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
 import { WaveSystem } from '../systems/WaveSystem';
 import { createHelpPanel } from './createHelpPanel';
+import { createLevelPanel } from './createLevelPanel';
 import { drawPathGuides } from './drawPathGuides';
 
 export class GameScene extends Phaser.Scene {
@@ -28,6 +30,10 @@ export class GameScene extends Phaser.Scene {
   private waveButton!: Phaser.GameObjects.Text;
   private helpButton!: Phaser.GameObjects.Text;
   private helpPanel!: Phaser.GameObjects.Container;
+  private levelButton!: Phaser.GameObjects.Text;
+  private levelPanel!: Phaser.GameObjects.Container;
+  private levelIndex = 0;
+  private campaignIntroShown = false;
   private audioButton!: Phaser.GameObjects.Text;
   private combatAudio?: CombatAudio;
   private audioEnabled = false;
@@ -44,8 +50,12 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
+  private get level(): LevelDefinition {
+    return LEVELS[this.levelIndex];
+  }
+
   create(): void {
-    this.placement = new TowerPlacement(COLS, ROWS, PATH_TILES);
+    this.placement = new TowerPlacement(COLS, ROWS, this.level.path);
     this.waves = new WaveSystem(WAVE_COUNTS, SPAWN_INTERVAL, STARTING_LIVES);
     this.towerSelected = false;
     this.towers = [];
@@ -59,11 +69,12 @@ export class GameScene extends Phaser.Scene {
     this.combatAudio?.setEnabled(this.audioEnabled);
 
     this.drawMap();
-    drawPathGuides(this);
+    drawPathGuides(this, this.level.path);
     this.createHud();
     this.createPlacementControls();
     this.createMatchControls();
     this.createHelpControls();
+    this.createLevelControls();
     this.createAudioControls();
     this.refreshHud();
 
@@ -91,29 +102,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawMap(): void {
-    const pathSet = new Set(PATH_TILES.map((point) => `${point.x},${point.y}`));
+    const colors = this.level.colors;
+    const pathSet = new Set(this.level.path.map((point) => `${point.x},${point.y}`));
     const graphics = this.add.graphics();
 
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
         const isPath = pathSet.has(`${x},${y}`);
         const base = isPath
-          ? 0xb9905e
-          : (x + y) % 2 === 0
-            ? 0x70a855
-            : 0x669e4d;
+          ? colors.path
+          : colors.grass[(x + y) % 2];
 
         graphics.fillStyle(base).fillRect(x * TILE, y * TILE, TILE, TILE);
         graphics
-          .lineStyle(1, isPath ? 0x967046 : 0x598747, 0.55)
+          .lineStyle(1, isPath ? colors.pathEdge : colors.grassEdge, 0.55)
           .strokeRect(x * TILE, y * TILE, TILE, TILE);
 
         if (!isPath && (x * 17 + y * 23) % 7 === 0) {
           graphics
-            .fillStyle(0x3c753e)
+            .fillStyle(colors.grassDark)
             .fillRect(x * TILE + 15, y * TILE + 18, 8, 5);
           graphics
-            .fillStyle(0x9dc875)
+            .fillStyle(colors.grassLight)
             .fillRect(x * TILE + 18, y * TILE + 15, 4, 4);
         }
       }
@@ -123,7 +133,7 @@ export class GameScene extends Phaser.Scene {
       .fillStyle(0x202d39)
       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
 
-    const exit = PATH_TILES[PATH_TILES.length - 1];
+    const exit = this.level.path[this.level.path.length - 1];
     this.exitFlash = this.add
       .rectangle(
         (exit.x + 0.5) * TILE,
@@ -142,10 +152,21 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 10', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#b4d9bc',
+    this.levelButton = this.add
+      .text(786, 68, '', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#f5e6ae',
+        backgroundColor: '#33485c',
+        fixedWidth: 148,
+        align: 'center',
+        padding: { x: 8, y: 6 },
+      })
+      .setInteractive({ useHandCursor: true });
+    this.levelButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.leftButtonDown()) {
+        this.toggleLevelPanel();
+      }
     });
     this.livesText = this.add.text(786, 112, '', {
       fontFamily: 'monospace',
@@ -160,8 +181,8 @@ export class GameScene extends Phaser.Scene {
     });
 
     const title = import.meta.env.DEV
-      ? 'PIXEL DEFENSE  /  DEVELOPMENT BUILD'
-      : 'PIXEL DEFENSE';
+      ? `${this.level.title} / DEVELOPMENT BUILD`
+      : this.level.title;
 
     this.add.text(24, 540, title, {
       fontFamily: 'monospace',
@@ -246,7 +267,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private toggleBuild(event?: KeyboardEvent): void {
-    if (event?.repeat || this.waves.finished || this.helpPanel.visible) {
+    if (
+      event?.repeat || this.waves.finished || this.helpPanel.visible ||
+      this.levelPanel.visible
+    ) {
       return;
     }
 
@@ -258,7 +282,7 @@ export class GameScene extends Phaser.Scene {
       this.towerButton
         .setText('CANCEL BUILD')
         .setBackgroundColor('#236b88');
-      this.placementText.setText('Click grass to place.\nB or Esc to cancel.');
+      this.placementText.setText('Click empty ground.\nB or Esc to cancel.');
 
       if (this.input.manager.isOver) {
         this.updatePlacementPreview(this.input.activePointer);
@@ -311,6 +335,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private cancelSelection(): void {
+    if (this.levelPanel.visible) {
+      this.toggleLevelPanel();
+      return;
+    }
+
     if (this.helpPanel.visible) {
       this.toggleHelp();
       return;
@@ -333,7 +362,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
-    if (this.waves.finished || this.helpPanel.visible || !pointer.leftButtonDown()) {
+    if (
+      this.waves.finished || this.helpPanel.visible || this.levelPanel.visible ||
+      !pointer.leftButtonDown()
+    ) {
       return;
     }
 
@@ -440,7 +472,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startNextWave(event?: KeyboardEvent): void {
-    if (event?.repeat || this.helpPanel.visible || this.waves.state !== 'ready') {
+    if (
+      event?.repeat || this.helpPanel.visible || this.levelPanel.visible ||
+      this.waves.state !== 'ready'
+    ) {
       return;
     }
 
@@ -481,6 +516,40 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private createLevelControls(): void {
+    this.levelPanel = createLevelPanel(
+      this,
+      this.levelIndex,
+      (index) => this.selectLevel(index),
+      () => this.toggleLevelPanel(),
+    );
+    this.levelPanel.setVisible(!this.campaignIntroShown);
+    this.campaignIntroShown = true;
+  }
+
+  private toggleLevelPanel(): void {
+    if (this.waves.state === 'running') {
+      return;
+    }
+
+    if (!this.levelPanel.visible) {
+      this.helpPanel.setVisible(false);
+      this.cancelSelection();
+    }
+
+    this.levelPanel.setVisible(!this.levelPanel.visible);
+    this.refreshHud();
+  }
+
+  private selectLevel(index: number): void {
+    if (this.waves.state === 'running' || !LEVELS[index]) {
+      return;
+    }
+
+    this.levelIndex = index;
+    this.scene.restart();
+  }
+
   private createAudioControls(): void {
     this.audioButton = this.add
       .text(786, 608, '', {
@@ -512,7 +581,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private toggleHelp(event?: KeyboardEvent): void {
-    if (event?.repeat || this.waves.state === 'running') {
+    if (event?.repeat || this.waves.state === 'running' || this.levelPanel.visible) {
       return;
     }
 
@@ -525,7 +594,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnEnemy(ageSeconds: number): void {
-    const path = PATH_TILES.map((point) => ({
+    const path = this.level.path.map((point) => ({
       x: (point.x + 0.5) * TILE,
       y: (point.y + 0.5) * TILE,
     }));
@@ -582,11 +651,13 @@ export class GameScene extends Phaser.Scene {
     this.placementText.setText('Match finished.\nPress RESTART.');
 
     const won = this.waves.state === 'won';
+    const nextLevel = this.levelIndex + 1;
+    const hasNextLevel = won && nextLevel < LEVELS.length;
     const panel = this.add
-      .rectangle(0, 0, 480, 260, 0x15202b, 0.96)
+      .rectangle(0, 0, 480, 300, 0x15202b, 0.96)
       .setStrokeStyle(3, won ? 0x91ff9e : 0xff7373);
     const title = this.add
-      .text(0, -85, won ? 'VICTORY' : 'DEFEAT', {
+      .text(0, -105, won ? 'VICTORY' : 'DEFEAT', {
         fontFamily: 'monospace',
         fontSize: '30px',
         color: won ? '#91ff9e' : '#ff7373',
@@ -595,7 +666,7 @@ export class GameScene extends Phaser.Scene {
     const stats = this.add
       .text(
         0,
-        -5,
+        -25,
         `WAVE ${this.waves.waveNumber}/${this.waves.totalWaves}    KILLS ${this.waves.kills}\nLIVES ${this.waves.lives}     TOWERS ${this.placement.count}`,
         {
           fontFamily: 'monospace',
@@ -607,25 +678,65 @@ export class GameScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
     const detail = this.add
-      .text(0, 90, 'Press RESTART to play again.', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#ffffff',
-      })
+      .text(
+        0,
+        55,
+        hasNextLevel
+          ? 'The road is safe. Continue to the next chapter.'
+          : won
+            ? 'The last beacon shines again.\nPress RESTART to play again.'
+            : 'Press RESTART to play again.',
+        {
+          fontFamily: 'monospace',
+          fontSize: '16px',
+          color: '#ffffff',
+          align: 'center',
+          wordWrap: { width: 430 },
+        },
+      )
       .setOrigin(0.5);
 
-    this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, [
-      panel,
-      title,
-      stats,
-      detail,
-    ]).setDepth(20);
+    const content: Phaser.GameObjects.GameObject[] = [panel, title, stats, detail];
+
+    if (hasNextLevel) {
+      const nextButton = this.add
+        .text(0, 110, 'NEXT LEVEL', {
+          fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
+          backgroundColor: '#236b88', fixedWidth: 200, align: 'center',
+          padding: { x: 8, y: 8 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      nextButton.on(
+        'pointerdown',
+        (
+          pointer: Phaser.Input.Pointer,
+          _x: number,
+          _y: number,
+          event: Phaser.Types.Input.EventData,
+        ) => {
+          event.stopPropagation();
+          if (pointer.leftButtonDown()) {
+            this.selectLevel(nextLevel);
+          }
+        },
+      );
+      content.push(nextButton);
+    }
+
+    this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, content).setDepth(20);
   }
 
   private refreshHud(): void {
     const waves = this.waves;
     const ready = waves.state === 'ready';
-    const waveAvailable = ready && !this.helpPanel.visible;
+    const panelOpen = this.helpPanel.visible || this.levelPanel.visible;
+    const waveAvailable = ready && !panelOpen;
+    const readyLabel = this.levelPanel.visible
+      ? 'CLOSE LEVEL MENU'
+      : this.helpPanel.visible
+        ? 'CLOSE HELP FIRST'
+        : `START WAVE ${waves.waveNumber + 1}`;
 
     this.livesText.setText(`LIVES ${waves.lives}`);
     this.matchText.setText(
@@ -634,9 +745,7 @@ export class GameScene extends Phaser.Scene {
     this.waveButton
       .setText(
         ready
-          ? this.helpPanel.visible
-            ? 'CLOSE HELP FIRST'
-            : `START WAVE ${waves.waveNumber + 1}`
+          ? readyLabel
           : waves.state === 'running'
             ? 'WAVE RUNNING'
             : 'MATCH OVER',
@@ -645,24 +754,35 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(waveAvailable ? 1 : 0.55);
 
     this.waveButton.input!.enabled = waveAvailable;
-    this.towerButton.input!.enabled = !waves.finished && !this.helpPanel.visible;
-    this.towerButton.setAlpha(waves.finished || this.helpPanel.visible ? 0.55 : 1);
+    this.towerButton.input!.enabled = !waves.finished && !panelOpen;
+    this.towerButton.setAlpha(waves.finished || panelOpen ? 0.55 : 1);
 
-    const helpAvailable = waves.state !== 'running';
+    const helpAvailable = waves.state !== 'running' && !this.levelPanel.visible;
+    const helpLabel = this.levelPanel.visible
+      ? 'CLOSE LEVEL MENU'
+      : this.helpPanel.visible
+        ? 'CLOSE HELP'
+        : 'HOW TO PLAY';
     this.helpButton
       .setText(
-        !helpAvailable
+        waves.state === 'running'
           ? 'HELP AFTER WAVE'
-          : this.helpPanel.visible
-            ? 'CLOSE HELP'
-            : 'HOW TO PLAY',
+          : helpLabel,
       )
       .setAlpha(helpAvailable ? 1 : 0.55);
     this.helpButton.input!.enabled = helpAvailable;
+    this.levelButton
+      .setText(
+        this.levelPanel.visible
+          ? 'CLOSE LEVELS'
+          : `LEVEL ${this.levelIndex + 1}/${LEVELS.length}`,
+      )
+      .setAlpha(waves.state === 'running' ? 0.55 : 1);
+    this.levelButton.input!.enabled = waves.state !== 'running';
 
     if (ready) {
       this.phaseText.setText(
-        `Ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
+        `${this.level.title}: ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
       );
     } else if (waves.state === 'running') {
       this.phaseText.setText(
@@ -670,7 +790,7 @@ export class GameScene extends Phaser.Scene {
       );
     } else {
       this.phaseText.setText(
-        waves.state === 'won' ? 'All 3 waves cleared.' : 'No lives remaining.',
+        waves.state === 'won' ? `${this.level.title}: all waves cleared.` : 'No lives remaining.',
       );
     }
   }

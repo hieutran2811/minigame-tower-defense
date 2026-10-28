@@ -40,7 +40,7 @@ export function createHelpPanel(
   const objective = scene.add.text(
     -320,
     -162,
-    `Keep at least one of your ${STARTING_LIVES} lives through all ${WAVE_COUNTS.length} waves.`,
+    `Each map: survive ${WAVE_COUNTS.length} waves with at least 1 of your ${STARTING_LIVES} lives.`,
     {
       fontFamily: 'monospace',
       fontSize: '15px',
@@ -53,7 +53,7 @@ export function createHelpPanel(
     -116,
     [
       'BUILD    B / BASIC TOWER selects or cancels building.',
-      '         Click grass. Green = valid; red = blocked.',
+      '         Click empty ground. Green = valid; red = blocked.',
       'INSPECT  Esc cancels building; click a placed tower.',
       `WAVES    N / START WAVE: ${WAVE_COUNTS.join(' / ')} enemies.`,
       '         Wait until every enemy is defeated or has escaped.',
@@ -76,7 +76,7 @@ export function createHelpPanel(
     { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
   );
   const hint = scene.add
-    .text(0, 140, 'Close help to use B / N. R also works while help is open.', {
+    .text(0, 140, 'Use LEVEL to change maps. R restarts the current map.', {
       fontFamily: 'monospace',
       fontSize: '13px',
       color: '#aab7bd',

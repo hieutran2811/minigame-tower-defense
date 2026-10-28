@@ -1,7 +1,7 @@
-# Mini Tower Defense — Milestone 10
+# The Last Beacon — Milestone 11
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
-The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
+Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
 All graphics are procedural pixel-style shapes.
 
 ## Requirements and development
@@ -18,20 +18,22 @@ build label appear only in development.
 
 ## Controls
 
-1. Click **BASIC TOWER**, then left-click empty grass to place a tower.
-2. Green previews mark valid tiles; red previews mark path/occupied tiles. The
+1. On first launch, choose **PLAY** in the story menu, or press **Esc** to start
+   on Border Watch. No wave starts automatically.
+2. Click **BASIC TOWER**, then left-click empty ground to place a tower.
+3. Green previews mark valid tiles; red previews mark path/occupied tiles. The
    circle shows the tower's 128px range and is clipped to the map bounds.
-3. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
+4. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
    cancels selection.
-4. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
+5. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
    running, and shows **MATCH OVER** after victory/defeat.
-5. After all enemies in a wave are resolved, place more towers or start the
+6. After all enemies in a wave are resolved, place more towers or start the
    next wave manually.
-6. Click **RESTART** at any time to reset the entire match.
-7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
+7. Click **RESTART** at any time to reset the current map's match.
+8. Click **HOW TO PLAY** or press **H** to open help before/between waves or
    after the result. Close it with **H**, **Esc**, or the close button. During a
    wave, the help button is dimmed and reads **HELP AFTER WAVE**.
-8. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
+9. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
    to mute immediately. Audio starts off, and your choice survives Restart but
    resets on a page reload. The audio button works during waves, with help open,
    and after a result. It shows **AUDIO UNAVAILABLE** when Web Audio is unavailable.
@@ -44,10 +46,11 @@ Keyboard shortcuts use the same actions as the buttons:
 | N | Start the next wave only when ready |
 | R | Restart at any time, including with help open or after a result |
 | H | Open/close help outside active waves |
-| Esc | Close help or cancel building/inspection |
+| Esc | Close the level menu/help or cancel building/inspection |
 
 Holding B, N, R, or H does not repeat the action. With help open, B and N are
 blocked while R still resets the match. After a result, B and N stay locked.
+With the level menu open, B/N/H are blocked; R still restarts the current map.
 
 Help explains the objective, placement colors, tower inspection, manual waves,
 lives, Restart, and current tower stats. Opening it closes build/inspection
@@ -67,7 +70,41 @@ Sidebar/footer clicks never place towers. Placement is allowed before and during
 waves, and stops after victory/defeat, when the tower button shows **BUILD LOCKED**.
 Towers have no cost. Progress and placement are not saved.
 
+## Campaign: The Last Beacon
+
+The Dawn Guard must keep the Hollow host away from the last beacon. Open
+**LEVEL n/3** in the sidebar to read the chapter stories and choose a map before
+or between waves, or after a result. Level selection is disabled during a wave.
+
+| Chapter | Setting | Path tiles |
+| --- | --- | --- |
+| 1. Border Watch | Hold the border road for the Dawn Guard | 19 (original map) |
+| 2. Whispering Grove | Protect refugees on a winding forest trail | 29 |
+| 3. Dawn Keep | Defend the last beacon until the guard rallies | 25 |
+
+Each chapter has a different path and palette. The beacon gate, IN/OUT markers,
+movement, placement rules, and escape warning all use the selected map's path.
+Story text and palettes are in `src/data/levels.ts`.
+
+All three chapters are available immediately. Choosing PLAY starts that chapter
+fresh: 10 lives, 0 kills/towers, wave 1 waiting for manual input, and no old
+enemies/projectiles/effects. Choosing the current chapter replays it. Restart/R
+replays the current chapter, with the menu closed and audio preference preserved.
+The story menu opens automatically only on first launch; a page reload returns
+to Border Watch and resets that first-launch state.
+
+The level menu blocks map clicks and build/Start Wave/help controls while open.
+Esc or CLOSE dismisses it. Restart and audio remain available in the sidebar.
+Opening the level menu closes help and clears placement/inspection selection.
+
+Win chapter one/two to reveal **NEXT LEVEL**. Clicking it starts a fresh match on
+the next map; its first wave still waits for input. No chapter advances
+automatically. The final chapter ends the story and offers Restart or level
+selection. There are no unlock requirements or persistent campaign scores.
+
 ## Waves, lives, and outcomes
+
+These rules apply separately to every chapter:
 
 | Wave | Enemies | Spawn interval |
 | --- | --- | --- |
@@ -141,7 +178,7 @@ and starting lives are in `src/config/waveConfig.ts`.
 
 ## Quick play checks
 
-To test victory, place towers on these zero-based tiles before starting:
+On Border Watch, test victory by placing towers on these zero-based tiles:
 
 ```text
 (0,2) (1,2) (2,2) (3,2)
@@ -164,7 +201,29 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 10 verification status
+### Milestone 11 verification status
+
+The approved expansion direction is fantasy maps/story, followed by enemy/tower
+variety and stronger visuals. M11 implements the campaign foundation only:
+three chapter definitions, a story/selection panel, selected-map rendering and
+path usage, fresh matches on selection, and manual NEXT LEVEL after victory.
+The initial chapter preserves the original path and combat/wave rules.
+
+- Added 11 tests in `levels.test.ts` for the original map, three unique chapters,
+  path bounds/continuity, valid placement, and movement along each actual route.
+- A separate static coordinate check passed for all three definitions: 19/29/25
+  path tiles, no repeated cells, no diagonal/gapped steps, and valid edge endpoints.
+  This check does not execute Vitest or Phaser.
+- `npm run test` and `npm run build` were attempted after M11 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. The new tests and M11 build are not yet confirmed.
+- Source review covered shared selected-path use, input blocking, fresh-match
+  transitions, Restart's selected chapter, and captured NEXT LEVEL callbacks.
+  Browser verification of all three maps and repeated transitions is pending.
+- No dependencies were added. Enemy/tower variety remains for subsequent
+  milestones in [docs/roadmap.md](docs/roadmap.md).
+
+### Milestone 10 verification status (previously recorded)
 
 The approved M10 scope is combat audio with an on/off button. `CombatAudio.ts`
 generates tones using Phaser's shared Web Audio context/destination; it does not
@@ -276,6 +335,21 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Reload: confirm the first-launch story menu has three readable chapters.
+      Choose PLAY or close with Esc; confirm no enemy appears before Start Wave.
+- [ ] Play each map: compare the path with markers, movement, placement rejection,
+      and exit warning. Check distinct palettes and the gate below enemies/HP bars.
+- [ ] Open LEVEL while building/inspecting: selection must clear; B/N/H and map
+      clicks must not act through the menu. Closing it must restore valid controls.
+- [ ] During a wave, confirm level selection is disabled while building/Restart
+      continue to work. Check it becomes available between waves and after results.
+- [ ] Select/replay a chapter after building or losing lives: confirm 10 lives,
+      0 kills/towers, no old entities/effects, and a manually waiting first wave.
+- [ ] Win Border Watch, click NEXT LEVEL, then repeat through Dawn Keep. Check
+      fresh state each time, no automatic waves, and no NEXT LEVEL after chapter 3.
+- [ ] Restart/R on maps 2 and 3, including with menus open: keep that map selected,
+      close panels, clear match state, preserve audio choice, and avoid duplicate
+      spawns or listeners. Repeat level changes and inspect the browser console.
 - [ ] Reload the page: AUDIO: OFF is the default. Play briefly while muted and
       confirm silence. Enable audio and hear new shot/hit/kill/escape cues only.
 - [ ] Mute during combat: all current tones should stop immediately. Unmute and
@@ -363,7 +437,7 @@ sharpness on other displays still need manual verification.
 ## Project structure
 
 - `src/config`: dimensions, combat constants, and wave/life settings.
-- `src/data`: the fixed orthogonal path.
+- `src/data`: chapter stories, palettes, orthogonal paths, and the original map.
 - `src/systems`: pure movement, placement, combat, and wave/match logic.
 - `src/entities`: Phaser enemy, tower, and projectile presentation.
 - `src/scenes`: rendering, input, wave/combat orchestration, and result UI.
@@ -389,11 +463,14 @@ M10 adds optional generated combat tones, a sidebar audio toggle, resource clean
 on mute/Restart, and audio lifecycle unit tests. The UI preference persists across
 Restart; game state still resets completely. Phaser handles context unlocking and
 tab suspension/resume. The game stays playable without Web Audio.
-Economy, upgrades, selling, and multiple enemy types remain out of scope.
+M11 adds the three-map fantasy campaign, story menu, level selection, map palettes,
+beacon gate, and manual next chapter. Combat and waves remain the same per map.
+Enemy and tower variety is planned next; economy, upgrades, and selling remain out
+of scope. See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M10 build verification is pending as described above.
+M5 through M11 build verification is pending as described above.
 
 ## Agent workflow and hooks
 
