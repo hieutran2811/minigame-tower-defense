@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
-import { TOWER_RANGE } from '../config/combatConfig';
+import {
+  TOWER_DAMAGE,
+  TOWER_FIRE_INTERVAL,
+  TOWER_RANGE,
+} from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 import { PATH_TILES, type Point } from '../data/map';
@@ -8,6 +12,7 @@ import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
 import { WaveSystem } from '../systems/WaveSystem';
+import { drawPathGuides } from './drawPathGuides';
 
 export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
@@ -20,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private fpsText?: Phaser.GameObjects.Text;
   private placement!: TowerPlacement;
   private placementPreview!: Phaser.GameObjects.Graphics;
+  private towerInspection!: Phaser.GameObjects.Graphics;
   private towerButton!: Phaser.GameObjects.Text;
   private placementText!: Phaser.GameObjects.Text;
   private towerCountText!: Phaser.GameObjects.Text;
@@ -39,21 +45,22 @@ export class GameScene extends Phaser.Scene {
     this.fpsText = undefined;
 
     this.drawMap();
+    drawPathGuides(this);
     this.createHud();
     this.createPlacementControls();
     this.createMatchControls();
     this.refreshHud();
 
     this.input.on('pointermove', this.updatePlacementPreview, this);
-    this.input.on('pointerdown', this.placeTower, this);
+    this.input.on('pointerdown', this.handleMapPointerDown, this);
     this.input.on('gameout', this.hidePlacementPreview, this);
-    this.input.keyboard?.on('keydown-ESC', this.cancelPlacement, this);
+    this.input.keyboard?.on('keydown-ESC', this.cancelSelection, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off('pointermove', this.updatePlacementPreview, this);
-      this.input.off('pointerdown', this.placeTower, this);
+      this.input.off('pointerdown', this.handleMapPointerDown, this);
       this.input.off('gameout', this.hidePlacementPreview, this);
-      this.input.keyboard?.off('keydown-ESC', this.cancelPlacement, this);
+      this.input.keyboard?.off('keydown-ESC', this.cancelSelection, this);
     });
   }
 
@@ -97,7 +104,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 5', {
+    this.add.text(786, 68, 'MILESTONE 6', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
@@ -118,11 +125,16 @@ export class GameScene extends Phaser.Scene {
       fontSize: '18px',
       color: '#e6e6e6',
     });
-    this.add.text(24, 580, 'Select a tower, then click grass. Esc cancels.', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#aab7bd',
-    });
+    this.add.text(
+      24,
+      580,
+      'BASIC TOWER builds. Click built towers to inspect. Esc closes.',
+      {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#aab7bd',
+      },
+    );
     this.phaseText = this.add.text(24, 610, '', {
       fontFamily: 'monospace',
       fontSize: '13px',
@@ -159,6 +171,7 @@ export class GameScene extends Phaser.Scene {
       if (this.towerSelected) {
         this.cancelPlacement();
       } else {
+        this.clearTowerInspection();
         this.towerSelected = true;
         this.towerButton
           .setText('CANCEL BUILD')
@@ -167,11 +180,16 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    this.add.text(786, 266, '128px / 1s / 1 DMG', {
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      color: '#b4d9bc',
-    });
+    this.add.text(
+      786,
+      266,
+      `${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG`,
+      {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#b4d9bc',
+      },
+    );
     this.placementText = this.add.text(786, 300, 'Select BASIC TOWER\nto start building.', {
       fontFamily: 'monospace',
       fontSize: '13px',
@@ -185,11 +203,13 @@ export class GameScene extends Phaser.Scene {
       color: '#b9e8f5',
     });
     this.placementPreview = this.add.graphics().setDepth(10);
+    this.towerInspection = this.add.graphics().setDepth(0.75);
     // Keep the range circle inside the map, away from the sidebar and footer.
     const mapMask = this.add.graphics().setVisible(false);
     mapMask.fillStyle(0xffffff).fillRect(0, 0, COLS * TILE, ROWS * TILE);
     const previewMask = mapMask.createGeometryMask();
     this.placementPreview.setMask(previewMask);
+    this.towerInspection.setMask(previewMask);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
   }
 
@@ -233,6 +253,18 @@ export class GameScene extends Phaser.Scene {
     this.placementPreview.clear();
   }
 
+  private clearTowerInspection(): void {
+    this.towerInspection.clear();
+  }
+
+  private cancelSelection(): void {
+    this.clearTowerInspection();
+
+    if (!this.waves.finished) {
+      this.cancelPlacement();
+    }
+  }
+
   private cancelPlacement(): void {
     this.towerSelected = false;
     this.towerButton
@@ -240,6 +272,44 @@ export class GameScene extends Phaser.Scene {
       .setBackgroundColor('#33485c');
     this.placementText.setText('Select BASIC TOWER\nto start building.');
     this.hidePlacementPreview();
+  }
+
+  private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
+    if (this.waves.finished || !pointer.leftButtonDown()) {
+      return;
+    }
+
+    if (this.towerSelected) {
+      this.placeTower(pointer);
+      return;
+    }
+
+    const tile = this.pointerTile(pointer);
+
+    if (this.placement.getStatus(tile) === 'outside-map') {
+      return;
+    }
+
+    this.cancelSelection();
+    const tower = this.towers.find(
+      (candidate) =>
+        candidate.x === (tile.x + 0.5) * TILE &&
+        candidate.y === (tile.y + 0.5) * TILE,
+    );
+
+    if (!tower) {
+      return;
+    }
+
+    this.towerInspection
+      .fillStyle(0x7eddf5, 0.08)
+      .fillCircle(tower.x, tower.y, TOWER_RANGE)
+      .lineStyle(2, 0x7eddf5, 0.9)
+      .strokeCircle(tower.x, tower.y, TOWER_RANGE)
+      .strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+    this.placementText.setText(
+      `BASIC TOWER\n${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG\nEsc to close.`,
+    );
   }
 
   private placeTower(pointer: Phaser.Input.Pointer): void {
@@ -340,6 +410,7 @@ export class GameScene extends Phaser.Scene {
 
     this.enemies = [];
     this.cancelPlacement();
+    this.clearTowerInspection();
     this.towerButton
       .setText('BUILD LOCKED')
       .setAlpha(0.55)

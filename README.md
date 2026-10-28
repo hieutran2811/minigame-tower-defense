@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 5
+# Mini Tower Defense — Milestone 6
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -28,6 +28,15 @@ build label appear only in development.
 5. After all enemies in a wave are resolved, place more towers or start the
    next wave manually.
 6. Click **RESTART** at any time to reset the entire match.
+
+Outside build mode, left-click a built tower's tile to inspect its range and
+combat stats. The blue range circle stays visible as you move the pointer and is
+clipped to the map. Click another tower to switch, or click a map tile without a
+tower or press **Esc** to close. Starting build mode also closes inspection.
+Inspection is disabled after victory/defeat and resets on Restart.
+
+The path has **IN** and **OUT** labels, plus arrows pointing along the outgoing
+path at each turn. These ground markings render below towers and enemies.
 
 Sidebar/footer clicks never place towers. Placement is allowed before and during
 waves, and stops after victory/defeat, when the tower button shows **BUILD LOCKED**.
@@ -108,7 +117,20 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 5 verification status
+### Milestone 6 verification status
+
+M6 adds tower inspection and path guides. Range and combat stats use the existing
+combat constants. Build mode keeps its placement behavior, including rejection of
+occupied tiles. Escape after a result preserves the locked button and match text.
+No dependencies, combat rules, wave rules, or system logic were changed.
+
+- `npm run test` and `npm run build` were attempted after M6 integration. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. M6 test/build success is not yet confirmed.
+- Source review covered input routing, map clipping, draw order, and scene cleanup.
+  Browser checks of inspection, guides, resizing, and repeated Restart are pending.
+
+### Milestone 5 verification status (previously recorded)
 
 M5 changes presentation only: range preview, button states, and result statistics.
 No dependencies, combat settings, wave rules, or system logic were changed.
@@ -150,6 +172,16 @@ sharpness on other displays still need manual verification.
       stay inside the map and disappear on Esc, pointer exit, and match end.
 - [ ] Check BASIC TOWER / CANCEL BUILD / BUILD LOCKED states and the dimmed,
       disabled wave button during play and after the result.
+- [ ] Outside build mode, click a built tower and confirm the blue range circle
+      and stats match 128px / 1s / 1 DMG without changing the tower count.
+- [ ] Move the pointer and click another tower; only the selected tower's range
+      should remain. Check map clipping on edge and corner towers after resizing.
+- [ ] Click grass/path without a tower or press Esc to close inspection. Sidebar
+      and footer clicks should not select towers or change the tower count.
+- [ ] Enter build mode while inspecting a tower; inspection must close and an
+      occupied tile must still reject placement rather than select the tower.
+- [ ] Check IN / OUT labels and arrows at every turn; enemies and HP bars must
+      remain visible above the markings.
 - [ ] Verify no enemies appear before Start Wave.
 - [ ] Watch several enemies move simultaneously with individual HP bars.
 - [ ] Check that towers prioritize enemies further along the path when in range.
@@ -159,9 +191,11 @@ sharpness on other displays still need manual verification.
 - [ ] Play through defeat without towers and check one lost life per escape.
 - [ ] Compare the result panel's wave, kills, lives, and towers with the sidebar.
 - [ ] Check that placement and Start Wave stop after the result.
+- [ ] Finish a match while inspecting a tower; its range must disappear. Press
+      Esc after the result and confirm BUILD LOCKED and match text stay intact.
 - [ ] Restart during play and after each outcome; confirm full state reset.
 - [ ] After Restart, confirm BASIC TOWER and START WAVE 1 are available and
-      there is no range preview or previous result panel.
+      there is no range preview, tower inspection, or previous result panel.
 - [ ] Repeat in production preview; confirm no FPS/development label.
 - [ ] Confirm there are no browser console errors.
 
@@ -180,11 +214,14 @@ M4 adds waves, multiple enemies, lives, victory/defeat, and Restart.
 M5 adds a map-clipped range preview, explicit build/wave button states, Restart
 hover feedback, and match statistics on the result panel. The preview uses the
 existing combat range constant, and statistics use the existing match state.
+M6 adds inspection of built towers and path entry/exit/turn guides. The small
+`src/scenes/drawPathGuides.ts` renderer keeps static ground markings separate from
+scene input and combat orchestration; scene shutdown owns its display objects.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 build verification is pending as described above.
+M5 and M6 build verification is pending as described above.
 
 ## Agent workflow and hooks
 
