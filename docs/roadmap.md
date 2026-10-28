@@ -59,12 +59,22 @@ Implemented in code, awaiting automated/browser acceptance:
 
 ## M14: graphics and gameplay polish
 
-- Give enemies and towers recognizable pixel silhouettes, beyond palette swaps.
-- Add terrain details, stronger beacon/fortress art, shadows, and restrained
-  animation while keeping paths, HP bars, previews, and projectiles readable.
-- Playtest wave composition and tower tradeoffs across all maps.
-- Check production rendering, scaling, repeated Restart, audio cleanup, and the
-  browser console. Keep FPS/development labels limited to development.
+Rendering implemented; automated/browser acceptance and balance playtests pending:
+
+- Deterministic flat terrain details distinguish border/forest/ruins; route-edge
+  shoulders and sparse pebbles retain readable paths. Empty ground stays buildable.
+- A crenellated gate and one ambient beacon pulse fit inside each map's exit tile.
+- Ground shadows, feet, horns/cape/armor, tower masonry and a bow string enrich
+  silhouettes. Walking moves only the figure; combat positions/HP bars stay stable.
+- Reuse existing rendering APIs and lifecycle. No dependencies, stat changes,
+  wave changes, new obstacles, or extra enemy/tower mechanics.
+- Six entity presentation tests protect combat coordinates, HP and cleanup; tower
+  test fixtures only gain drawing methods. npm test/build are blocked as recorded
+  in the README, so those tests and production output remain unconfirmed.
+- Use [playtest-M14.md](playtest-M14.md) for nine chapter/type comparisons and
+  production rendering, scaling, repeated Restart, audio cleanup, and console
+  checks. FPS/development labels remain development-only. No balance conclusions
+  are made before playing these runs.
 
 Economy, upgrades, selling, backend, and multiplayer are not introduced by this
 roadmap. Further business-rule or dependency changes remain separate review items.

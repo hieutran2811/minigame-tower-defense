@@ -36,14 +36,43 @@ export function drawPathGuides(
   const gateX = exit.x * TILE;
   const gateY = exit.y * TILE;
   graphics
+    .fillStyle(0x15202b, 0.35)
+    .fillRect(gateX + 8, gateY + 56, 48, 6)
     .fillStyle(0x33485c)
-    .fillRect(gateX + 16, gateY + 28, 32, 24)
-    .fillRect(gateX + 12, gateY + 22, 10, 30)
-    .fillRect(gateX + 42, gateY + 22, 10, 30)
+    .fillRect(gateX + 18, gateY + 35, 28, 25)
+    .fillRect(gateX + 8, gateY + 28, 13, 32)
+    .fillRect(gateX + 43, gateY + 28, 13, 32)
+    .fillRect(gateX + 8, gateY + 24, 5, 8)
+    .fillRect(gateX + 16, gateY + 24, 5, 8)
+    .fillRect(gateX + 43, gateY + 24, 5, 8)
+    .fillRect(gateX + 51, gateY + 24, 5, 8)
+    .fillStyle(0x71899a)
+    .fillRect(gateX + 10, gateY + 32, 3, 24)
+    .fillRect(gateX + 45, gateY + 32, 3, 24)
+    .fillRect(gateX + 22, gateY + 36, 20, 3)
     .fillStyle(0x15202b)
-    .fillRect(gateX + 28, gateY + 39, 8, 13)
+    .fillRect(gateX + 12, gateY + 38, 4, 7)
+    .fillRect(gateX + 48, gateY + 38, 4, 7)
+    .fillRect(gateX + 26, gateY + 45, 12, 15)
+    .fillRect(gateX + 28, gateY + 42, 8, 5)
+    .fillStyle(0x967046)
+    .fillRect(gateX + 28, gateY + 48, 2, 12)
+    .fillRect(gateX + 34, gateY + 48, 2, 12)
+    .fillStyle(0x71899a)
+    .fillRect(gateX + 25, gateY + 32, 14, 3)
     .fillStyle(0xf5e6ae)
-    .fillRect(gateX + 29, gateY + 23, 6, 8);
+    .fillRect(gateX + 28, gateY + 29, 8, 3);
+
+  const beacon = scene.add
+    .rectangle(gateX + 32, gateY + 26, 4, 6, 0xffedb5)
+    .setDepth(0.5);
+  scene.tweens.add({
+    targets: beacon,
+    alpha: 0.45,
+    duration: 700,
+    yoyo: true,
+    repeat: -1,
+  });
 
   const endpoints = [
     { tile: path[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },

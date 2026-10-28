@@ -34,6 +34,8 @@ function createScene(): Phaser.Scene {
     destroy() {},
   });
   const graphics = () => ({
+    fillStyle() { return this; },
+    fillRect() { return this; },
     lineStyle() { return this; },
     beginPath() { return this; },
     moveTo() { return this; },
@@ -43,6 +45,7 @@ function createScene(): Phaser.Scene {
   return {
     add: {
       rectangle: shape,
+      ellipse: shape,
       polygon: shape,
       graphics,
       container: shape,

@@ -14,6 +14,7 @@ import { WaveSystem } from '../systems/WaveSystem';
 import { createHelpPanel } from './createHelpPanel';
 import { createLevelPanel } from './createLevelPanel';
 import { drawPathGuides } from './drawPathGuides';
+import { drawTerrain } from './drawTerrain';
 
 export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
@@ -107,34 +108,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawMap(): void {
-    const colors = this.level.colors;
-    const pathSet = new Set(this.level.path.map((point) => `${point.x},${point.y}`));
-    const graphics = this.add.graphics();
-
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
-        const isPath = pathSet.has(`${x},${y}`);
-        const base = isPath
-          ? colors.path
-          : colors.grass[(x + y) % 2];
-
-        graphics.fillStyle(base).fillRect(x * TILE, y * TILE, TILE, TILE);
-        graphics
-          .lineStyle(1, isPath ? colors.pathEdge : colors.grassEdge, 0.55)
-          .strokeRect(x * TILE, y * TILE, TILE, TILE);
-
-        if (!isPath && (x * 17 + y * 23) % 7 === 0) {
-          graphics
-            .fillStyle(colors.grassDark)
-            .fillRect(x * TILE + 15, y * TILE + 18, 8, 5);
-          graphics
-            .fillStyle(colors.grassLight)
-            .fillRect(x * TILE + 18, y * TILE + 15, 4, 4);
-        }
-      }
-    }
-
-    graphics
+    drawTerrain(this, this.level);
+    this.add.graphics()
       .fillStyle(0x202d39)
       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
 

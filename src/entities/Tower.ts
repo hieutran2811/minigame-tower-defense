@@ -16,9 +16,16 @@ export class Tower extends Phaser.GameObjects.Container {
     this.profile = profile;
     this.attack = new TowerAttack(profile.range, profile.interval);
 
+    const shadow = scene.add.ellipse(0, 24, 46, 12, 0x15202b, 0.3);
     const base = scene.add
       .rectangle(0, 6, 40, 32, 0x33485c)
       .setStrokeStyle(3, 0x1b2c3b);
+    const masonry = scene.add.graphics()
+      .fillStyle(0x71899a)
+      .fillRect(-16, 17, 11, 3)
+      .fillRect(5, 17, 11, 3)
+      .fillStyle(0x1b2c3b)
+      .fillRect(-1, 13, 2, 9);
     const head = kind === 'rapid'
       ? scene.add
         .polygon(0, 0, [0, 13, 13, 0, 26, 13, 13, 26], profile.color)
@@ -42,6 +49,12 @@ export class Tower extends Phaser.GameObjects.Container {
 
     if (kind === 'longbow') {
       content.push(scene.add.graphics()
+        .lineStyle(1, 0xf5e6ae)
+        .beginPath()
+        .moveTo(-15, -8)
+        .lineTo(0, 3)
+        .lineTo(15, -8)
+        .strokePath()
         .lineStyle(3, profile.outline)
         .beginPath()
         .moveTo(-15, -8)
@@ -56,7 +69,7 @@ export class Tower extends Phaser.GameObjects.Container {
 
     content.push(this.muzzleFlash);
     this.turret = scene.add.container(0, 0, content);
-    this.add([base, this.turret]);
+    this.add([shadow, base, masonry, this.turret]);
     this.setDepth(1);
     scene.add.existing(this);
   }

@@ -7,6 +7,9 @@ import { PathFollower } from '../systems/PathFollower';
 export class Enemy {
   readonly target: CombatTarget;
   private readonly sprite: Phaser.GameObjects.Container;
+  private readonly figure: Phaser.GameObjects.Container;
+  private readonly feet: Phaser.GameObjects.Rectangle[];
+  private readonly footY: number;
   private readonly healthBar: Phaser.GameObjects.Rectangle;
   private readonly hitFlash: Phaser.GameObjects.Rectangle;
   private readonly follower: PathFollower;
@@ -35,6 +38,29 @@ export class Enemy {
 
     const width = kind === 'guard' ? 34 : kind === 'runner' ? 30 : 26;
     const height = kind === 'guard' ? 32 : kind === 'runner' ? 24 : 26;
+    const shadow = scene.add.ellipse(0, 18, width + 8, 10, 0x15202b, 0.28);
+    this.footY = height / 2 + 1;
+    this.feet = [-7, 7].map((x) =>
+      scene.add.rectangle(x, this.footY, 6, 6, profile.outline),
+    );
+    const content: Phaser.GameObjects.GameObject[] = [...this.feet];
+
+    if (kind === 'runner') {
+      content.push(scene.add.polygon(-11, 4, [0, 0, 18, 0, 18, 14, 0, 9], profile.outline));
+    } else if (kind === 'guard') {
+      content.push(
+        scene.add.rectangle(-17, -4, 6, 12, profile.outline),
+        scene.add.rectangle(17, -4, 6, 12, profile.outline),
+        scene.add.rectangle(0, -17, 10, 5, profile.outline),
+        scene.add.rectangle(0, -17, 2, 5, 0xb9e8f5),
+      );
+    } else {
+      content.push(
+        scene.add.rectangle(-10, -15, 5, 6, profile.outline),
+        scene.add.rectangle(10, -15, 5, 6, profile.outline),
+      );
+    }
+
     const body = kind === 'runner'
       ? scene.add
         .polygon(0, 0, [0, 12, 15, 0, 30, 12, 15, 24], profile.color)
@@ -43,11 +69,12 @@ export class Enemy {
         .rectangle(0, 0, width, height, profile.color)
         .setStrokeStyle(kind === 'guard' ? 4 : 3, profile.outline);
     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
-    const content: Phaser.GameObjects.GameObject[] = [body, eyes];
+    content.push(body, eyes);
 
     if (kind === 'guard') {
       content.push(
         scene.add.rectangle(0, 7, 14, 14, 0xb9e8f5).setStrokeStyle(2, profile.outline),
+        scene.add.rectangle(0, 1, 10, 2, 0xffffff),
       );
     }
 
@@ -62,22 +89,27 @@ export class Enemy {
       );
     }
 
+    this.figure = scene.add.container(0, 0, content);
     const barWidth = kind === 'guard' ? 42 : 30;
     const barY = kind === 'guard' ? -27 : -23;
     const healthBackground = scene.add.rectangle(0, barY, barWidth, 5, 0x633545);
     this.healthBar = scene.add
       .rectangle(-barWidth / 2, barY, barWidth, 5, 0x91ff9e)
       .setOrigin(0, 0.5);
-    content.push(healthBackground, this.healthBar);
-
     this.sprite = scene.add
-      .container(path[0].x, path[0].y, content)
+      .container(path[0].x, path[0].y, [shadow, this.figure, healthBackground, this.healthBar])
       .setDepth(2);
   }
 
   update(deltaMs: number): void {
     this.follower.update(deltaMs / 1000);
     this.sprite.setPosition(this.follower.position.x, this.follower.position.y);
+    // Animate only the figure: combat position, shadow and HP bars stay anchored.
+    const distance = this.follower.distanceTraveled;
+    this.figure.setY(Math.round(Math.sin(distance / 8)));
+    const step = Math.round(Math.sin(distance / 5));
+    this.feet[0].setY(this.footY + step);
+    this.feet[1].setY(this.footY - step);
   }
 
   refreshHealthBar(): boolean {

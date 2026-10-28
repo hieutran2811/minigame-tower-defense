@@ -1,4 +1,4 @@
-# The Last Beacon — Milestone 13
+# The Last Beacon — Milestone 14
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -137,9 +137,9 @@ The result panel shows the wave reached, kills, remaining lives, and towers buil
 
 | Kind | HP | Speed | Appearance |
 | --- | --- | --- | --- |
-| Basic | 3 | 95px/s | Original purple square |
-| Runner | 2 | 140px/s | Orange diamond with R |
-| Guard | 7 | 65px/s | Larger blue-gray body, shield, and G |
+| Basic | 3 | 95px/s | Purple square with small horns |
+| Runner | 2 | 140px/s | Orange diamond, cape, and R |
+| Guard | 7 | 65px/s | Blue-gray shoulder armor, crest, shield, and G |
 
 All kinds still cost one life on escape and add one kill on death. Guard has more
 HP, with no armor reduction or special ability. Every HP bar starts full and uses
@@ -198,6 +198,29 @@ These HP/range/cadence interactions are initial balance values, especially with
 free placement. Play through the mixed-enemy chapters before accepting balance;
 the options are not claimed to have equal strength. Basic remains the reference.
 Profiles and the sidebar order are in `src/config/towerConfig.ts`.
+
+## Terrain and animation
+
+Border Watch has scattered golden shoots, Whispering Grove has flat ferns and
+small violet flowers, and Dawn Keep has stone fragments. Details are deterministic
+and stay near tile corners. They are background art: every empty ground tile is
+still buildable, and path/occupied-tile rules are unchanged. Path shoulders follow
+the route boundary, with small pebbles away from the turn arrows.
+
+The exit has a stone gate, battlements, windows, and a softly pulsing beacon,
+all inside its tile below enemies and HP bars. IN/OUT markers, escape warnings,
+previews, and inspection retain their layers and visibility.
+
+Enemies have ground shadows, small feet, and distinct horn/cape/armor details.
+Walking moves only their figure by up to one pixel, with alternating feet based
+on traveled distance. The combat/root position, shadow, and HP bar do not bob;
+speed, targeting, damage, and exit timing are unchanged. Tower shadows, stone
+bases, and the Longbow string add depth without changing their aiming or stats.
+
+Terrain is drawn once per scene. Walking adds no timers or tweens. The beacon has
+one ambient alpha tween, which can continue behind menus/results; Phaser clears
+scene tweens and objects on Restart/chapter changes. Existing combat flashes and
+audio behavior stay unchanged.
 
 ## Combat
 
@@ -273,7 +296,33 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 13 verification status
+### Milestone 14 verification status
+
+M14 implements the rendering portion of the approved graphics/gameplay polish:
+chapter terrain details, a stronger fortress/beacon, enemy/tower shadows, richer
+silhouettes, and small walking/ambient animation. Balance and browser acceptance
+remain pending; there are no stat, path, wave, economy, or dependency changes.
+
+- `drawTerrain.ts` holds the map drawing previously in `GameScene.drawMap`, plus
+  route shoulders and flat decorations. No placement data or hit areas are added.
+- `Enemy` keeps its root at the follower's combat position and animates a nested
+  figure. The HP bar/shadow are siblings, so the walking motion cannot move them.
+- Added six `EnemyPresentation.test.ts` cases with drawing stubs for all profiles,
+  anchored HP/shadows, damage normalization, long-frame corners/exits, and target
+  invalidation/child cleanup. M13 tower test stubs gained only the new drawing APIs.
+- Source review checked drawing bounds/layers and figure ownership. The installed
+  Phaser TweenManager's shutdown calls `killAll()`, covering the beacon tween.
+- `npm run test` and `npm run build` were attempted after M14 implementation.
+  Both exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. New tests, TypeScript checking, and the build are unconfirmed.
+- Static checks confirmed the M13 patch reconstructs its eight reviewed files
+  and each chapter's eight playtest positions are distinct, in bounds, and off its path.
+  These checks do not execute Vitest, Phaser, or a browser.
+- [docs/playtest-M14.md](docs/playtest-M14.md) records nine pending chapter/type
+  comparisons plus rendering, production, scaling, Restart, audio, and console
+  checks. No playtest results or balance success are claimed.
+
+### Milestone 13 verification status (previously recorded)
 
 M13 follows the tower-choice roadmap: Basic stays unchanged; Rapid and Longbow
 add contrasting range/cadence/damage profiles, procedural shapes, and shot colors.
@@ -457,6 +506,15 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Follow [docs/playtest-M14.md](docs/playtest-M14.md) for the visual/lifecycle
+      checks and controlled chapter/type comparisons. Record actual results.
+- [ ] Confirm flat terrain decorations stay buildable, paths and turn arrows stay
+      readable, and the fortress/OUT/beacon fit the exit tile on every map.
+- [ ] Watch clustered enemies: body/feet move slightly while HP bars and shadows
+      remain anchored. Check profile markers, hit flashes, aiming and shot colors.
+- [ ] Repeat Restart/chapter changes during effects and audio. Verify only one
+      current beacon pulse, no old visuals/tones, correct scaling, no console
+      errors, and no FPS/development label in production.
 - [ ] Confirm Basic is initially selected and selected again after Restart or
       chapter selection. B/BUILD should place that type and Esc cancel building.
 - [ ] Choose Rapid and BOW before and during waves. While building, change type:
@@ -626,11 +684,14 @@ projectile damage/ownership, spawning intervals, lives, and outcomes are unchang
 M13 adds Rapid/Longbow tower profiles, type selection, per-kind previews/inspection,
 procedural silhouettes, shot colors, and damage/cadence. Basic and the shared
 combat algorithms remain unchanged. Economy, upgrades, and selling remain out of scope.
+M14 adds terrain/path-edge details, fortress art, shadows, enemy walking, and
+ambient beacon animation. Combat and level/wave definitions are unchanged; the
+playtest sheet records pending balance and browser verification.
 See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M13 build verification is pending as described above.
+M5 through M14 build verification is pending as described above.
 
 ## Agent workflow and hooks
 
