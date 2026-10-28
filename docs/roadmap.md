@@ -25,13 +25,18 @@ the main README.
 
 ## M12: enemy variety and wave composition
 
-Next proposed implementation:
+Implemented in code, awaiting automated/browser acceptance:
 
-- Keep the existing enemy as the baseline; add a fast, fragile runner and a slow,
-  tougher guard with distinct silhouettes and readable HP bars.
-- Describe wave composition in data and introduce the variants gradually across
-  chapters, preserving manual wave starts and exact spawn accounting.
-- Review speed/HP values and play through each chapter before accepting balance.
+- Basic stays at 3 HP / 95px/s. Runner starts at 2 HP / 140px/s; Guard starts at
+  7 HP / 65px/s, without armor reduction or other special abilities.
+- Diamond/R and larger shield/G silhouettes distinguish the new kinds. HP bars
+  use each profile's maximum HP; help lists stats and the footer previews waves.
+- Ordered lists in level data keep 5/8/12 counts. Border Watch stays all Basic;
+  Grove introduces Runner in wave 1 and Guard in wave 2; Dawn Keep mixes all three.
+- Preserve each scheduled index/age through long frames and use the kind's own
+  speed. The numeric WaveSystem API and combat systems stay unchanged.
+- Review these initial speed/HP values by playing through the mixed chapters
+  before accepting balance.
 - Preserve path-progress targeting, live-target projectile ownership, one lost
   life per escape, and immediate defeat at zero lives.
 

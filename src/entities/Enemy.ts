@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ENEMY_MAX_HEALTH, ENEMY_SPEED } from '../config/combatConfig';
+import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
 import type { Point } from '../data/map';
 import type { CombatTarget } from '../systems/Combat';
 import { PathFollower } from '../systems/PathFollower';
@@ -10,40 +10,68 @@ export class Enemy {
   private readonly healthBar: Phaser.GameObjects.Rectangle;
   private readonly hitFlash: Phaser.GameObjects.Rectangle;
   private readonly follower: PathFollower;
-  private displayedHealth = ENEMY_MAX_HEALTH;
+  private readonly maxHealth: number;
+  private readonly deathColor: number;
+  private displayedHealth: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
     path: Point[],
+    kind: EnemyKind = 'basic',
   ) {
-    this.follower = new PathFollower(path, ENEMY_SPEED);
+    const profile = ENEMY_TYPES[kind];
+    this.maxHealth = profile.maxHealth;
+    this.displayedHealth = profile.maxHealth;
+    this.deathColor = profile.burst;
+    this.follower = new PathFollower(path, profile.speed);
     const follower = this.follower;
     this.target = {
       position: this.follower.position,
-      health: ENEMY_MAX_HEALTH,
+      health: profile.maxHealth,
       get progress() {
         return follower.distanceTraveled;
       },
     };
 
-    const body = scene.add
-      .rectangle(0, 0, 26, 26, 0x9b5de5)
-      .setStrokeStyle(3, 0x352044);
+    const width = kind === 'guard' ? 34 : kind === 'runner' ? 30 : 26;
+    const height = kind === 'guard' ? 32 : kind === 'runner' ? 24 : 26;
+    const body = kind === 'runner'
+      ? scene.add
+        .polygon(0, 0, [0, 12, 15, 0, 30, 12, 15, 24], profile.color)
+        .setStrokeStyle(2, profile.outline)
+      : scene.add
+        .rectangle(0, 0, width, height, profile.color)
+        .setStrokeStyle(kind === 'guard' ? 4 : 3, profile.outline);
     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
-    this.hitFlash = scene.add.rectangle(0, 0, 26, 26, 0xffffff).setAlpha(0);
-    const healthBackground = scene.add.rectangle(0, -23, 30, 5, 0x633545);
+    const content: Phaser.GameObjects.GameObject[] = [body, eyes];
+
+    if (kind === 'guard') {
+      content.push(
+        scene.add.rectangle(0, 7, 14, 14, 0xb9e8f5).setStrokeStyle(2, profile.outline),
+      );
+    }
+
+    this.hitFlash = scene.add.rectangle(0, 0, width, height, 0xffffff).setAlpha(0);
+    content.push(this.hitFlash);
+
+    if (kind !== 'basic') {
+      content.push(
+        scene.add.text(0, kind === 'guard' ? 7 : 5, kind === 'runner' ? 'R' : 'G', {
+          fontFamily: 'monospace', fontSize: '9px', color: '#263d52',
+        }).setOrigin(0.5),
+      );
+    }
+
+    const barWidth = kind === 'guard' ? 42 : 30;
+    const barY = kind === 'guard' ? -27 : -23;
+    const healthBackground = scene.add.rectangle(0, barY, barWidth, 5, 0x633545);
     this.healthBar = scene.add
-      .rectangle(-15, -23, 30, 5, 0x91ff9e)
+      .rectangle(-barWidth / 2, barY, barWidth, 5, 0x91ff9e)
       .setOrigin(0, 0.5);
+    content.push(healthBackground, this.healthBar);
 
     this.sprite = scene.add
-      .container(path[0].x, path[0].y, [
-        body,
-        eyes,
-        this.hitFlash,
-        healthBackground,
-        this.healthBar,
-      ])
+      .container(path[0].x, path[0].y, content)
       .setDepth(2);
   }
 
@@ -66,7 +94,7 @@ export class Enemy {
     }
 
     this.displayedHealth = this.target.health;
-    this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
+    this.healthBar.setScale(this.target.health / this.maxHealth, 1);
     return damaged;
   }
 
@@ -76,7 +104,7 @@ export class Enemy {
       .setDepth(4);
 
     burst
-      .fillStyle(0xc99aff)
+      .fillStyle(this.deathColor)
       .fillRect(-10, -10, 6, 6)
       .fillRect(4, -10, 6, 6)
       .fillRect(-10, 4, 6, 6)

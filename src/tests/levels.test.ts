@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLS, ROWS, TILE } from '../config/gameConfig';
+import { ENEMY_TYPES } from '../config/enemyConfig';
+import { WAVE_COUNTS } from '../config/waveConfig';
 import { LEVELS } from '../data/levels';
 import { PATH_TILES } from '../data/map';
 import { PathFollower } from '../systems/PathFollower';
@@ -16,8 +18,29 @@ describe('Campaign level data', () => {
     expect(new Set(LEVELS.map((level) => JSON.stringify(level.path))).size).toBe(3);
   });
 
+  it('keeps Border Watch entirely basic for the original match', () => {
+    expect(LEVELS[0].waves.flat().every((kind) => kind === 'basic')).toBe(true);
+  });
+
+  it('introduces runners before guards in Whispering Grove', () => {
+    expect(LEVELS[1].waves[0]).toContain('runner');
+    expect(LEVELS[1].waves[0]).not.toContain('guard');
+    expect(LEVELS[1].waves.slice(1).flat()).toContain('guard');
+  });
+
+  it('mixes all three enemy kinds in Dawn Keep', () => {
+    expect(new Set(LEVELS[2].waves.flat())).toEqual(new Set(Object.keys(ENEMY_TYPES)));
+  });
+
   for (const level of LEVELS) {
     describe(level.title, () => {
+      it('keeps exact wave counts and valid enemy kinds', () => {
+        expect(level.waves.map((wave) => wave.length)).toEqual(WAVE_COUNTS);
+        for (const kind of level.waves.flat()) {
+          expect(ENEMY_TYPES[kind]).toBeDefined();
+        }
+      });
+
       it('keeps a continuous, non-repeating orthogonal path inside the map', () => {
         expect(level.path.length).toBeGreaterThan(1);
         const cells = new Set(level.path.map((point) => `${point.x},${point.y}`));

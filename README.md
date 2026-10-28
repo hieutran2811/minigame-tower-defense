@@ -1,4 +1,4 @@
-# The Last Beacon — Milestone 11
+# The Last Beacon — Milestone 12
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -84,7 +84,9 @@ or between waves, or after a result. Level selection is disabled during a wave.
 
 Each chapter has a different path and palette. The beacon gate, IN/OUT markers,
 movement, placement rules, and escape warning all use the selected map's path.
-Story text and palettes are in `src/data/levels.ts`.
+Story text, palettes, and ordered enemy lists are in `src/data/levels.ts`.
+Border Watch retains only Basic enemies. Whispering Grove introduces Runners in
+wave 1 and Guards in wave 2; Dawn Keep mixes all three kinds.
 
 All three chapters are available immediately. Choosing PLAY starts that chapter
 fresh: 10 lives, 0 kills/towers, wave 1 waiting for manual input, and no old
@@ -130,6 +132,39 @@ The sidebar shows lives, wave number, active enemies, kills, and tower count.
 The footer reports the wave's spawn progress.
 The result panel shows the wave reached, kills, remaining lives, and towers built.
 
+## Enemy types and wave composition
+
+| Kind | HP | Speed | Appearance |
+| --- | --- | --- | --- |
+| Basic | 3 | 95px/s | Original purple square |
+| Runner | 2 | 140px/s | Orange diamond with R |
+| Guard | 7 | 65px/s | Larger blue-gray body, shield, and G |
+
+All kinds still cost one life on escape and add one kill on death. Guard has more
+HP, with no armor reduction or special ability. Every HP bar starts full and uses
+that kind's maximum HP. Profiles are in `src/config/enemyConfig.ts`.
+
+The ready footer previews the next wave's composition. HOW TO PLAY lists enemy
+HP/speed and markers. Runners can overtake earlier enemies; towers still prioritize
+the furthest in-range path progress, with spawn order breaking ties.
+
+| Chapter | Wave | Basic | Runner | Guard |
+| --- | --- | --- | --- | --- |
+| Border Watch | 1 | 5 | 0 | 0 |
+| Border Watch | 2 | 8 | 0 | 0 |
+| Border Watch | 3 | 12 | 0 | 0 |
+| Whispering Grove | 1 | 3 | 2 | 0 |
+| Whispering Grove | 2 | 4 | 3 | 1 |
+| Whispering Grove | 3 | 5 | 4 | 3 |
+| Dawn Keep | 1 | 2 | 2 | 1 |
+| Dawn Keep | 2 | 2 | 3 | 3 |
+| Dawn Keep | 3 | 3 | 4 | 5 |
+
+Lists are deterministic, including spawn order. Long frames retain each queued
+enemy's kind and spawn age; its own speed determines how far it has moved. Each
+chapter still uses 5/8/12 enemies, immediate first spawn, and one-second spacing.
+Restart/replay starts the same lists afresh, with no individual respawns.
+
 ## Combat
 
 | Setting | Value |
@@ -137,8 +172,8 @@ The result panel shows the wave reached, kills, remaining lives, and towers buil
 | Tower range | 128px, including the boundary |
 | Fire interval | 1 second per tower |
 | Damage | 1 HP per projectile impact |
-| Enemy health | 3 HP |
-| Enemy speed | 95px/second |
+| Basic enemy health | 3 HP |
+| Basic enemy speed | 95px/second |
 | Projectile speed | 320px/second |
 
 Each tower chooses the live in-range enemy with the greatest distance traveled
@@ -173,8 +208,10 @@ Restart and mute stop all active tones. Muted/suspended audio does not queue old
 events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
 escape warning replaces other active tones so the lost life remains audible.
 
-Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
-and starting lives are in `src/config/waveConfig.ts`.
+Basic combat constants are in `src/config/combatConfig.ts`; enemy profiles are in
+`src/config/enemyConfig.ts`. Baseline wave counts, spawn interval, and starting
+lives are in `src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
+`src/data/levels.ts`.
 
 ## Quick play checks
 
@@ -201,7 +238,29 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 11 verification status
+### Milestone 12 verification status
+
+M12 implements Runner/Guard profiles and silhouettes, chapter wave composition,
+per-kind speed/HP/health bars, and next-wave/help information. Basic remains at
+3 HP and 95px/s, and Border Watch retains the original all-Basic match.
+
+- `WaveSystem`, targeting, and projectile logic are unchanged. The scene derives
+  counts from the chapter's lists and assigns each scheduled age to the kind at
+  the spawn index recorded before that frame's scheduler update.
+- Added six profile/combat tests in `EnemyTypes.test.ts` and six wave-composition
+  checks in `levels.test.ts`, including fast-enemy overtaking, mixed-kind ties,
+  original-target damage, exact counts, and gradual introductions.
+- A static data check confirmed all nine wave lists have sizes 5/8/12 and valid
+  kind IDs. This check does not execute Vitest or Phaser.
+- `npm run test` and `npm run build` were attempted after M12 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. The new tests and M12 build are not yet confirmed.
+- Source review checked profile initialization, full/normalized health bars,
+  per-frame spawn indices, unchanged life/kill rules, and restart lists. Browser
+  checks of silhouettes, long-frame mixed spawns, and chapter balance are pending.
+- No dependencies were added. Tower variety remains the next milestone.
+
+### Milestone 11 verification status (previously recorded)
 
 The approved expansion direction is fantasy maps/story, followed by enemy/tower
 variety and stronger visuals. M11 implements the campaign foundation only:
@@ -335,6 +394,20 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Confirm Border Watch still has 25 Basic enemies and the example tower
+      layout works as before. Check unchanged Basic HP/speed and tower stats.
+- [ ] In Whispering Grove, compare the ready footer with the table above. Watch
+      Runner appear in wave 1 and Guard in wave 2; each still costs one life.
+- [ ] In Dawn Keep, check all three silhouettes/markers. Verify Runner needs two
+      basic hits and Guard seven, with a full HP bar initially and visible damage
+      feedback from the first hit. Guard must not have damage reduction.
+- [ ] Check overtaking Runners become priority when further along and in range;
+      in-flight shots must still hit only their original living target.
+- [ ] With slow frames/CPU throttling, verify mixed spawn order/spacing and no
+      duplicate enemies. Wait for slow Guards before starting the next wave.
+- [ ] Restart/replay/change chapters repeatedly: correct lists start over with
+      zero active enemies/kills/towers and 10 lives. Check defeat, victory, NEXT
+      LEVEL, audio, help text fit after resizing, and the browser console.
 - [ ] Reload: confirm the first-launch story menu has three readable chapters.
       Choose PLAY or close with Esc; confirm no enemy appears before Start Wave.
 - [ ] Play each map: compare the path with markers, movement, placement rejection,
@@ -436,8 +509,8 @@ sharpness on other displays still need manual verification.
 
 ## Project structure
 
-- `src/config`: dimensions, combat constants, and wave/life settings.
-- `src/data`: chapter stories, palettes, orthogonal paths, and the original map.
+- `src/config`: dimensions, combat/enemy profiles, and wave/life settings.
+- `src/data`: chapter stories, palettes, paths, and ordered enemy wave lists.
 - `src/systems`: pure movement, placement, combat, and wave/match logic.
 - `src/entities`: Phaser enemy, tower, and projectile presentation.
 - `src/scenes`: rendering, input, wave/combat orchestration, and result UI.
@@ -465,12 +538,15 @@ Restart; game state still resets completely. Phaser handles context unlocking an
 tab suspension/resume. The game stays playable without Web Audio.
 M11 adds the three-map fantasy campaign, story menu, level selection, map palettes,
 beacon gate, and manual next chapter. Combat and waves remain the same per map.
-Enemy and tower variety is planned next; economy, upgrades, and selling remain out
-of scope. See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
+M12 adds Runner/Guard profiles, distinct enemy silhouettes, normalized health bars,
+chapter-specific enemy lists, and next-wave/help composition information. Targeting,
+projectile damage/ownership, spawning intervals, lives, and outcomes are unchanged.
+Tower variety is planned next; economy, upgrades, and selling remain out of scope.
+See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M11 build verification is pending as described above.
+M5 through M12 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

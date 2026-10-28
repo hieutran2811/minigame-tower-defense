@@ -1,10 +1,13 @@
 import { PATH_TILES, type Point } from './map';
+import type { EnemyKind } from '../config/enemyConfig';
+import { WAVE_COUNTS } from '../config/waveConfig';
 
 export type LevelDefinition = {
   id: string;
   title: string;
   story: string;
   path: readonly Point[];
+  waves: readonly (readonly EnemyKind[])[];
   colors: {
     grass: readonly [number, number];
     path: number;
@@ -21,6 +24,7 @@ export const LEVELS: readonly LevelDefinition[] = [
     title: 'BORDER WATCH',
     story: 'Border lanterns are going dark. Hold the watchpost and keep the road open for the Dawn Guard.',
     path: PATH_TILES,
+    waves: WAVE_COUNTS.map((count) => Array.from({ length: count }, (): EnemyKind => 'basic')),
     colors: {
       grass: [0x70a855, 0x669e4d],
       path: 0xb9905e,
@@ -33,7 +37,13 @@ export const LEVELS: readonly LevelDefinition[] = [
   {
     id: 'whispering-grove',
     title: 'WHISPERING GROVE',
-    story: 'The Hollow host has reached the grove. Guard the winding trail so the refugees can reach the keep.',
+    story: 'Runner scouts race through the grove while Hollow Guards follow. Keep the refugee trail open.',
+    waves: [
+      ['basic', 'basic', 'runner', 'basic', 'runner'],
+      ['basic', 'runner', 'basic', 'runner', 'guard', 'basic', 'runner', 'basic'],
+      ['basic', 'runner', 'guard', 'basic', 'runner', 'basic',
+        'guard', 'runner', 'basic', 'runner', 'guard', 'basic'],
+    ],
     path: [
       { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
       { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 3 },
@@ -58,7 +68,13 @@ export const LEVELS: readonly LevelDefinition[] = [
   {
     id: 'dawn-keep',
     title: 'DAWN KEEP',
-    story: 'The last beacon stands beyond the ruins. Defend its approach until the Dawn Guard can rally at the gate.',
+    story: 'Hollow Guards march on the last beacon. Break their advance before the Dawn Guard rallies at the gate.',
+    waves: [
+      ['basic', 'runner', 'guard', 'runner', 'basic'],
+      ['runner', 'guard', 'basic', 'runner', 'guard', 'basic', 'runner', 'guard'],
+      ['guard', 'runner', 'basic', 'guard', 'runner', 'guard',
+        'basic', 'runner', 'guard', 'runner', 'basic', 'guard'],
+    ],
     path: [
       { x: 0, y: 6 }, { x: 1, y: 6 }, { x: 2, y: 6 },
       { x: 3, y: 6 }, { x: 3, y: 5 }, { x: 3, y: 4 },

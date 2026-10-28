@@ -5,6 +5,7 @@ import {
   TOWER_RANGE,
 } from '../config/combatConfig';
 import { COLS, ROWS, TILE } from '../config/gameConfig';
+import { ENEMY_TYPES } from '../config/enemyConfig';
 import { STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 
 export function createHelpPanel(
@@ -52,21 +53,31 @@ export function createHelpPanel(
     -320,
     -116,
     [
-      'BUILD    B / BASIC TOWER selects or cancels building.',
-      '         Click empty ground. Green = valid; red = blocked.',
-      'INSPECT  Esc cancels building; click a placed tower.',
-      `WAVES    N / START WAVE: ${WAVE_COUNTS.join(' / ')} enemies.`,
-      '         Wait until every enemy is defeated or has escaped.',
-      'LIVES    Each escape costs 1 life; kills increase KILLS.',
-      'RESTART  R / RESTART resets the match and all towers.',
-      'AUDIO    Use AUDIO: OFF / ON in the sidebar to toggle sound.',
+      'BUILD    B selects/cancels building, then click empty ground.',
+      '         Green = valid; red = blocked. Esc cancels building.',
+      'INSPECT  Cancel building, then click a placed tower.',
+      `WAVES    N starts ${WAVE_COUNTS.join(' / ')} enemies; wait until each wave clears.`,
+      'LIVES    Escape: -1. Kill: +1 KILLS. R restarts; AUDIO toggles sound.',
     ].join('\n'),
     {
       fontFamily: 'monospace',
-      fontSize: '15px',
+      fontSize: '14px',
       color: '#ffffff',
-      lineSpacing: 9,
+      lineSpacing: 5,
       wordWrap: { width: 640 },
+    },
+  );
+  const enemyLegend = scene.add.text(-320, -2, 'ENEMIES (Runner: R / Guard: G)', {
+    fontFamily: 'monospace', fontSize: '13px', color: '#f5e6ae',
+  });
+  const enemyStats = scene.add.text(
+    -320,
+    18,
+    Object.values(ENEMY_TYPES).map((profile) =>
+      `${profile.label.padEnd(6)}  ${profile.maxHealth} HP / ${profile.speed}px/s`,
+    ).join('\n'),
+    {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4,
     },
   );
   const stats = scene.add.text(
@@ -118,6 +129,8 @@ export function createHelpPanel(
       title,
       objective,
       instructions,
+      enemyLegend,
+      enemyStats,
       stats,
       hint,
       closeButton,

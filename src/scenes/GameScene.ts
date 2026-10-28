@@ -5,7 +5,8 @@ import {
   TOWER_RANGE,
 } from '../config/combatConfig';
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
-import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
+import { SPAWN_INTERVAL, STARTING_LIVES } from '../config/waveConfig';
 import { LEVELS, type LevelDefinition } from '../data/levels';
 import type { Point } from '../data/map';
 import { CombatAudio } from '../entities/CombatAudio';
@@ -56,7 +57,11 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     this.placement = new TowerPlacement(COLS, ROWS, this.level.path);
-    this.waves = new WaveSystem(WAVE_COUNTS, SPAWN_INTERVAL, STARTING_LIVES);
+    this.waves = new WaveSystem(
+      this.level.waves.map((wave) => wave.length),
+      SPAWN_INTERVAL,
+      STARTING_LIVES,
+    );
     this.towerSelected = false;
     this.towers = [];
     this.enemies = [];
@@ -593,12 +598,12 @@ export class GameScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  private spawnEnemy(ageSeconds: number): void {
+  private spawnEnemy(ageSeconds: number, kind: EnemyKind): void {
     const path = this.level.path.map((point) => ({
       x: (point.x + 0.5) * TILE,
       y: (point.y + 0.5) * TILE,
     }));
-    const enemy = new Enemy(this, path);
+    const enemy = new Enemy(this, path, kind);
 
     enemy.update(ageSeconds * 1000);
     this.enemies.push(enemy);
@@ -727,6 +732,15 @@ export class GameScene extends Phaser.Scene {
     this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, content).setDepth(20);
   }
 
+  private nextWaveSummary(): string {
+    const nextWave = this.level.waves[this.waves.waveNumber];
+
+    return Object.entries(ENEMY_TYPES).flatMap(([kind, profile]) => {
+      const count = nextWave.filter((enemy) => enemy === kind).length;
+      return count > 0 ? [`${profile.label} ${count}`] : [];
+    }).join(' / ');
+  }
+
   private refreshHud(): void {
     const waves = this.waves;
     const ready = waves.state === 'ready';
@@ -781,8 +795,9 @@ export class GameScene extends Phaser.Scene {
     this.levelButton.input!.enabled = waves.state !== 'running';
 
     if (ready) {
+      const action = panelOpen ? 'Close panel to prepare.' : 'N starts wave.';
       this.phaseText.setText(
-        `${this.level.title}: ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
+        `Wave ${waves.waveNumber + 1}: ${this.nextWaveSummary()}. ${action}`,
       );
     } else if (waves.state === 'running') {
       this.phaseText.setText(
@@ -806,8 +821,12 @@ export class GameScene extends Phaser.Scene {
       enemy.update(delta);
     }
 
-    for (const age of this.waves.update(delta / 1000)) {
-      this.spawnEnemy(age);
+    const firstSpawnIndex = this.waves.spawned;
+    const spawnAges = this.waves.update(delta / 1000);
+
+    for (const [offset, age] of spawnAges.entries()) {
+      const kind = this.level.waves[this.waves.waveNumber - 1][firstSpawnIndex + offset];
+      this.spawnEnemy(age, kind);
     }
 
     // Resolve escaped enemies before selecting targets or applying damage.
