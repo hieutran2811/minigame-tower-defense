@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M17 — Goblin sprite candidate</title>
+<style>
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #141c25; color: #e9edf2; }
+body { max-width: 1040px; margin: 32px auto; padding: 0 20px 48px; line-height: 1.6; }
+h1,h2 { color: #f0d899; } a { color: #9edcf4; }
+.warning { padding: 12px 18px; border-left: 4px solid #edaa62; background: #2a2630; }
+.scroll { overflow-x: auto; }
+.checker,.sheet {
+  background-color: #e4e4e4;
+  background-image: conic-gradient(#aaa 25%, #e4e4e4 0 50%, #aaa 0 75%, #e4e4e4 0);
+  background-size: 16px 16px;
+}
+.sheet { position: relative; width: 768px; height: 512px; }
+.sheet img { display: block; width: 768px; height: 512px; }
+.sheet::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(to right, transparent 127px, #e04b4b 127px),
+    linear-gradient(to bottom, transparent 127px, #e04b4b 127px);
+  background-size: 128px 128px;
+  outline: 1px solid #e04b4b;
+}
+table { border-collapse: collapse; margin: 16px 0; }
+th,td { padding: 8px 12px; text-align: center; border: 1px solid #40505d; }
+th { white-space: nowrap; }
+.checker { width: 64px; height: 64px; }
+.pose {
+  width: 64px; height: 64px;
+  background-image: url("goblin-raider-candidate.png");
+  background-repeat: no-repeat; background-size: 384px 256px;
+  background-position: calc(var(--col, 0) * -64px) calc(var(--row, 0) * -64px);
+  outline: 1px solid #e04b4b;
+}
+.walking { animation: walking .5s steps(4, end) infinite; }
+@keyframes walking { from { background-position-x: -64px; } to { background-position-x: -320px; } }
+.animations { display: flex; flex-wrap: wrap; gap: 24px; }
+figure { margin: 0; min-width: 120px; }
+@media (prefers-reduced-motion: reduce) { .walking { animation: none; background-position-x: -64px; } }
+code { color: #bde3ce; } small { color: #bac8d6; }
+</style>
+</head>
+<body>
+<h1>M17 — Goblin: kiểm chứng sprite pipeline</h1>
+<p><a href="atlas-review.html">Xem bản hiệu chỉnh bằng atlas metadata đã được duyệt</a>.
+Trang bên dưới giữ cách cắt đều cũ để đối chiếu lỗi ban đầu.</p>
+<p class="warning"><strong>Cách cắt đều ban đầu — giữ để đối chiếu.</strong> PNG có alpha thật,
+nhưng pose chạm/tràn ô cũ. Game hiện dùng atlas metadata riêng và đã có đủ ba enemy.
+Xem trang atlas mới để đánh giá bản đã hiệu chỉnh; đây không phải screenshot runtime.</p>
+<p>Mở ở zoom <strong>100%</strong>. Nếu ảnh chưa xuất hiện, làm theo
+<a href="copy-candidate.md">lệnh copy đúng ảnh</a>. Nền caro là HTML nằm dưới PNG;
+trang không xóa nền, chỉnh PNG, xuất ảnh hay tải tài nguyên từ mạng.</p>
+<h2>Toàn sheet và lưới cắt</h2>
+<p>Nguồn 1536×1024, hiển thị 768×512. Mỗi ô đỏ tương ứng vùng crop 256×256 của loader.
+Quan sát các pose chạm cạnh: chúng chưa đủ điều kiện đưa vào game.</p>
+<div class="scroll"><div class="sheet"><img src="goblin-raider-candidate.png" width="1536" height="1024" alt="Goblin Raider 24 pose, candidate nguyên bản trên nền trong suốt"></div></div>
+<h2>Từng frame ở ô hiển thị 64px</h2>
+<p>Đây là phép cắt đều trực tiếp để lộ lỗi biên và lệch pivot. Tỷ lệ cơ thể chưa được chốt.
+Cột cuối là chuỗi death; không phải idle theo hướng của hàng.</p>
+<div class="scroll"><table>
+<thead><tr><th>Hướng</th><th>Idle</th><th>Walk A</th><th>Walk B</th><th>Walk C</th><th>Walk D</th><th>Death</th></tr></thead>
+<tbody><tr><th scope="row">Bắc — nhìn lưng</th><td><div class="checker"><div class="pose" style="--col:0;--row:0" role="img" aria-label="north, frame 0"></div></div><small>0</small></td><td><div class="checker"><div class="pose" style="--col:1;--row:0" role="img" aria-label="north, frame 1"></div></div><small>1</small></td><td><div class="checker"><div class="pose" style="--col:2;--row:0" role="img" aria-label="north, frame 2"></div></div><small>2</small></td><td><div class="checker"><div class="pose" style="--col:3;--row:0" role="img" aria-label="north, frame 3"></div></div><small>3</small></td><td><div class="checker"><div class="pose" style="--col:4;--row:0" role="img" aria-label="north, frame 4"></div></div><small>4</small></td><td><div class="checker"><div class="pose" style="--col:5;--row:0" role="img" aria-label="north, frame 5"></div></div><small>5</small></td></tr>
+<tr><th scope="row">Đông</th><td><div class="checker"><div class="pose" style="--col:0;--row:1" role="img" aria-label="east, frame 6"></div></div><small>6</small></td><td><div class="checker"><div class="pose" style="--col:1;--row:1" role="img" aria-label="east, frame 7"></div></div><small>7</small></td><td><div class="checker"><div class="pose" style="--col:2;--row:1" role="img" aria-label="east, frame 8"></div></div><small>8</small></td><td><div class="checker"><div class="pose" style="--col:3;--row:1" role="img" aria-label="east, frame 9"></div></div><small>9</small></td><td><div class="checker"><div class="pose" style="--col:4;--row:1" role="img" aria-label="east, frame 10"></div></div><small>10</small></td><td><div class="checker"><div class="pose" style="--col:5;--row:1" role="img" aria-label="east, frame 11"></div></div><small>11</small></td></tr>
+<tr><th scope="row">Nam — nhìn mặt</th><td><div class="checker"><div class="pose" style="--col:0;--row:2" role="img" aria-label="south, frame 12"></div></div><small>12</small></td><td><div class="checker"><div class="pose" style="--col:1;--row:2" role="img" aria-label="south, frame 13"></div></div><small>13</small></td><td><div class="checker"><div class="pose" style="--col:2;--row:2" role="img" aria-label="south, frame 14"></div></div><small>14</small></td><td><div class="checker"><div class="pose" style="--col:3;--row:2" role="img" aria-label="south, frame 15"></div></div><small>15</small></td><td><div class="checker"><div class="pose" style="--col:4;--row:2" role="img" aria-label="south, frame 16"></div></div><small>16</small></td><td><div class="checker"><div class="pose" style="--col:5;--row:2" role="img" aria-label="south, frame 17"></div></div><small>17</small></td></tr>
+<tr><th scope="row">Tây</th><td><div class="checker"><div class="pose" style="--col:0;--row:3" role="img" aria-label="west, frame 18"></div></div><small>18</small></td><td><div class="checker"><div class="pose" style="--col:1;--row:3" role="img" aria-label="west, frame 19"></div></div><small>19</small></td><td><div class="checker"><div class="pose" style="--col:2;--row:3" role="img" aria-label="west, frame 20"></div></div><small>20</small></td><td><div class="checker"><div class="pose" style="--col:3;--row:3" role="img" aria-label="west, frame 21"></div></div><small>21</small></td><td><div class="checker"><div class="pose" style="--col:4;--row:3" role="img" aria-label="west, frame 22"></div></div><small>22</small></td><td><div class="checker"><div class="pose" style="--col:5;--row:3" role="img" aria-label="west, frame 23"></div></div><small>23</small></td></tr></tbody>
+</table></div>
+<h2>Chu kỳ đi thử</h2>
+<p>CSS chạy bốn frame, 8 frame/giây; ô và nền đứng yên để dễ thấy phần hình bị nhảy.
+Tắt animation tự động nếu hệ điều hành chọn giảm chuyển động.</p>
+<div class="animations"><figure><div class="checker"><div class="pose walking" style="--row:0" role="img" aria-label="Walk north"></div></div><figcaption>Bắc — nhìn lưng</figcaption></figure>
+<figure><div class="checker"><div class="pose walking" style="--row:1" role="img" aria-label="Walk east"></div></div><figcaption>Đông</figcaption></figure>
+<figure><div class="checker"><div class="pose walking" style="--row:2" role="img" aria-label="Walk south"></div></div><figcaption>Nam — nhìn mặt</figcaption></figure>
+<figure><div class="checker"><div class="pose walking" style="--row:3" role="img" aria-label="Walk west"></div></div><figcaption>Tây</figcaption></figure></div>
+<h2>Phần cần chốt trước khi tích hợp</h2>
+<ul>
+<li>Cách cắt đều này đã được thay bằng atlas riêng cho từng pose trong runtime.</li>
+<li>Người dùng đã duyệt bước metadata; PNG gốc được giữ nguyên và vùng cắt/pivot đã hiệu chỉnh.</li>
+<li>Scout/Ogre đã có atlas riêng; xem trang atlas mới để review cả ba ở scale game.</li>
+<li>Test/build trong phiên vẫn dừng trước script vì Node EPERM; chưa đo browser/FPS.</li>
+</ul>
+<p><a href="README.md">Trạng thái và nghiệm thu M17</a> ·
+<a href="generation-log.json">Prompt và nguồn ảnh thực tế</a> ·
+<a href="../m16/review.html">M16 đã duyệt hướng mỹ thuật</a></p>
+</body>
+</html>

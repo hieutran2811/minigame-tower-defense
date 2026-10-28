@@ -22,7 +22,7 @@ export const LEVELS: readonly LevelDefinition[] = [
   {
     id: 'border-watch',
     title: 'BORDER WATCH',
-    story: 'Border lanterns are going dark. Hold the watchpost and keep the road open for the Dawn Guard.',
+    story: 'Hollow goblin raiders darken the border lanterns. Hold the watchpost and keep the Dawn Guard road open.',
     path: PATH_TILES,
     waves: WAVE_COUNTS.map((count) => Array.from({ length: count }, (): EnemyKind => 'basic')),
     colors: {
@@ -37,7 +37,7 @@ export const LEVELS: readonly LevelDefinition[] = [
   {
     id: 'whispering-grove',
     title: 'WHISPERING GROVE',
-    story: 'Runner scouts race through the grove while Hollow Guards follow. Keep the refugee trail open.',
+    story: 'Goblin scouts race through the grove while armored ogres follow. Keep the refugee trail open.',
     waves: [
       ['basic', 'basic', 'runner', 'basic', 'runner'],
       ['basic', 'runner', 'basic', 'runner', 'guard', 'basic', 'runner', 'basic'],
@@ -68,7 +68,7 @@ export const LEVELS: readonly LevelDefinition[] = [
   {
     id: 'dawn-keep',
     title: 'DAWN KEEP',
-    story: 'Hollow Guards march on the last beacon. Break their advance before the Dawn Guard rallies at the gate.',
+    story: 'Armored ogres lead the Hollow Host toward the last beacon. Hold until the Dawn Guard rallies at the gate.',
     waves: [
       ['basic', 'runner', 'guard', 'runner', 'basic'],
       ['runner', 'guard', 'basic', 'runner', 'guard', 'basic', 'runner', 'guard'],

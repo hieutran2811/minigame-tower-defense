@@ -1,0 +1,491 @@
+diff --git a/README.md b/README.md
+index 84dffc1..b5208e6 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# Mini Tower Defense — Milestone 9
++# Mini Tower Defense — Milestone 10
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -31,6 +31,10 @@ build label appear only in development.
+ 7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
+    after the result. Close it with **H**, **Esc**, or the close button. During a
+    wave, the help button is dimmed and reads **HELP AFTER WAVE**.
++8. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
++   to mute immediately. Audio starts off, and your choice survives Restart but
++   resets on a page reload. The audio button works during waves, with help open,
++   and after a result. It shows **AUDIO UNAVAILABLE** when Web Audio is unavailable.
+ 
+ Keyboard shortcuts use the same actions as the buttons:
+ 
+@@ -124,6 +128,14 @@ These effects never apply damage or delay enemy removal. Effects already running
+ may finish after the result appears; no new shots or enemies are created. Restart
+ clears the scene's display objects and tweens, including all active effects.
+ 
++M10 adds short generated tones for shots, nonlethal hits, kills, and escapes.
++Lethal hits use the kill cue instead of a separate hit cue. Closely grouped hits
++on one surviving enemy share one hit cue per frame. Audio never changes damage,
++cooldowns, wave timing, or removal. Existing tones can finish after the result;
++Restart and mute stop all active tones. Muted/suspended audio does not queue old
++events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
++escape warning replaces other active tones so the lost life remains audible.
++
+ Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
+ and starting lives are in `src/config/waveConfig.ts`.
+ 
+@@ -152,7 +164,26 @@ npm run preview
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 9 verification status
++### Milestone 10 verification status
++
++The approved M10 scope is combat audio with an on/off button. `CombatAudio.ts`
++generates tones using Phaser's shared Web Audio context/destination; it does not
++create or close an AudioContext. `GameScene.ts` owns the default-off preference,
++toggle, actual-event triggers, and scene cleanup. `Enemy.refreshHealthBar()` now
++reports whether HP decreased so the scene can emit a nonlethal hit cue.
++No dependencies, audio assets, or system/game-rule changes were added.
++
++- Added five `CombatAudio.test.ts` tests for default mute/suspended context,
++  mute/unmute without replay, natural completion, repeated cleanup without closing
++  the shared context, and escape-warning priority.
++- `npm run test` and `npm run build` were attempted after M10 implementation. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. The new tests and M10 build are not yet confirmed.
++- Source review covered cue ownership, node cleanup, shared-context use, silent
++  fallback, and Restart preference retention. Browser checks of audible output,
++  volume, tab switching, and repeated Restart are pending.
++
++### Milestone 9 verification status (previously recorded)
+ 
+ The approved M9 scope is B/N/R shortcuts and matching in-game instructions.
+ Keyboard and mouse controls share handlers in `GameScene.ts`, preserving existing
+@@ -245,6 +276,21 @@ sharpness on other displays still need manual verification.
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Reload the page: AUDIO: OFF is the default. Play briefly while muted and
++      confirm silence. Enable audio and hear new shot/hit/kill/escape cues only.
++- [ ] Mute during combat: all current tones should stop immediately. Unmute and
++      confirm old events are not replayed; shots without impact must not make hit
++      sounds, and an escape must not make a kill sound.
++- [ ] Restart with R and the button while sounds play; old tones must stop, while
++      the selected AUDIO: ON/OFF preference remains. Repeat after victory/defeat.
++- [ ] Toggle audio with help open and after a result; check labels update without
++      placing towers or starting a wave. Check the button fits after resizing and
++      in production preview.
++- [ ] Switch away from and back to the tab: suspended audio must not accumulate a
++      burst of old cues. With many towers, check volume stays reasonable and the
++      escape warning remains audible. Check the console for audio errors.
++- [ ] If Web Audio is unavailable, confirm AUDIO UNAVAILABLE is disabled while
++      all game controls, combat, and outcomes still work normally.
+ - [ ] Press B over grass: show building selection/preview immediately. Press B
+       again to cancel, then repeat using BASIC TOWER/CANCEL BUILD. A pointer
+       outside the game must not show a stale placement preview when B is pressed.
+@@ -339,11 +385,15 @@ M8 adds a HOW TO PLAY panel and H/Esc controls, available outside active waves.
+ The panel covers the map while Restart remains accessible in the sidebar.
+ M9 adds B/N/R shortcuts using the same scene handlers as their mouse buttons,
+ ignores repeated keydown events, and updates help/footer instructions.
++M10 adds optional generated combat tones, a sidebar audio toggle, resource cleanup
++on mute/Restart, and audio lifecycle unit tests. The UI preference persists across
++Restart; game state still resets completely. Phaser handles context unlocking and
++tab suspension/resume. The game stays playable without Web Audio.
+ Economy, upgrades, selling, and multiple enemy types remain out of scope.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 through M9 build verification is pending as described above.
++M5 through M10 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/src/entities/Enemy.ts b/src/entities/Enemy.ts
+index d0d8174..9630751 100644
+--- a/src/entities/Enemy.ts
++++ b/src/entities/Enemy.ts
+@@ -52,8 +52,10 @@ export class Enemy {
+     this.sprite.setPosition(this.follower.position.x, this.follower.position.y);
+   }
+ 
+-  refreshHealthBar(): void {
+-    if (this.target.health < this.displayedHealth) {
++  refreshHealthBar(): boolean {
++    const damaged = this.target.health < this.displayedHealth;
++
++    if (damaged) {
+       this.scene.tweens.killTweensOf(this.hitFlash);
+       this.hitFlash.setAlpha(0.75);
+       this.scene.tweens.add({
+@@ -65,6 +67,7 @@ export class Enemy {
+ 
+     this.displayedHealth = this.target.health;
+     this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
++    return damaged;
+   }
+ 
+   showDeathEffect(): void {
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+index 795e670..2938fb9 100644
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -7,6 +7,7 @@ import {
+ import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+ import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+ import { PATH_TILES, type Point } from '../data/map';
++import { CombatAudio } from '../entities/CombatAudio';
+ import { Enemy } from '../entities/Enemy';
+ import { Projectile } from '../entities/Projectile';
+ import { Tower } from '../entities/Tower';
+@@ -27,6 +28,9 @@ export class GameScene extends Phaser.Scene {
+   private waveButton!: Phaser.GameObjects.Text;
+   private helpButton!: Phaser.GameObjects.Text;
+   private helpPanel!: Phaser.GameObjects.Container;
++  private audioButton!: Phaser.GameObjects.Text;
++  private combatAudio?: CombatAudio;
++  private audioEnabled = false;
+   private fpsText?: Phaser.GameObjects.Text;
+   private placement!: TowerPlacement;
+   private placementPreview!: Phaser.GameObjects.Graphics;
+@@ -48,6 +52,11 @@ export class GameScene extends Phaser.Scene {
+     this.enemies = [];
+     this.projectiles = [];
+     this.fpsText = undefined;
++    this.combatAudio =
++      this.sound instanceof Phaser.Sound.WebAudioSoundManager
++        ? new CombatAudio(this.sound.context, this.sound.destination)
++        : undefined;
++    this.combatAudio?.setEnabled(this.audioEnabled);
+ 
+     this.drawMap();
+     drawPathGuides(this);
+@@ -55,6 +64,7 @@ export class GameScene extends Phaser.Scene {
+     this.createPlacementControls();
+     this.createMatchControls();
+     this.createHelpControls();
++    this.createAudioControls();
+     this.refreshHud();
+ 
+     this.input.on('pointermove', this.updatePlacementPreview, this);
+@@ -66,7 +76,9 @@ export class GameScene extends Phaser.Scene {
+     this.input.keyboard?.on('keydown-N', this.startNextWave, this);
+     this.input.keyboard?.on('keydown-R', this.restartMatch, this);
+ 
++    const audio = this.combatAudio;
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
++      audio?.stop();
+       this.input.off('pointermove', this.updatePlacementPreview, this);
+       this.input.off('pointerdown', this.handleMapPointerDown, this);
+       this.input.off('gameout', this.hidePlacementPreview, this);
+@@ -130,7 +142,7 @@ export class GameScene extends Phaser.Scene {
+       fontSize: '17px',
+       color: '#f5e6ae',
+     });
+-    this.add.text(786, 68, 'MILESTONE 9', {
++    this.add.text(786, 68, 'MILESTONE 10', {
+       fontFamily: 'monospace',
+       fontSize: '14px',
+       color: '#b4d9bc',
+@@ -469,6 +481,36 @@ export class GameScene extends Phaser.Scene {
+     });
+   }
+ 
++  private createAudioControls(): void {
++    this.audioButton = this.add
++      .text(786, 608, '', {
++        fontFamily: 'monospace',
++        fontSize: '12px',
++        color: '#ffffff',
++        backgroundColor: this.audioEnabled ? '#236b88' : '#33485c',
++        fixedWidth: 148,
++        align: 'center',
++        padding: { x: 8, y: 6 },
++      })
++      .setText(this.audioEnabled ? 'AUDIO: ON' : 'AUDIO: OFF');
++
++    if (!this.combatAudio) {
++      this.audioButton.setText('AUDIO UNAVAILABLE').setAlpha(0.55);
++      return;
++    }
++
++    this.audioButton.setInteractive({ useHandCursor: true });
++    this.audioButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
++      if (pointer.leftButtonDown()) {
++        this.audioEnabled = !this.audioEnabled;
++        this.combatAudio?.setEnabled(this.audioEnabled);
++        this.audioButton
++          .setText(this.audioEnabled ? 'AUDIO: ON' : 'AUDIO: OFF')
++          .setBackgroundColor(this.audioEnabled ? '#236b88' : '#33485c');
++      }
++    });
++  }
++
+   private toggleHelp(event?: KeyboardEvent): void {
+     if (event?.repeat || this.waves.state === 'running') {
+       return;
+@@ -656,6 +698,7 @@ export class GameScene extends Phaser.Scene {
+ 
+         if (this.waves.lives < livesBefore) {
+           this.flashEscape();
++          this.combatAudio?.play('escape');
+         }
+ 
+         enemy.destroy();
+@@ -673,6 +716,7 @@ export class GameScene extends Phaser.Scene {
+ 
+         if (target) {
+           this.projectiles.push(new Projectile(this, tower, target));
++          this.combatAudio?.play('shot');
+         }
+       }
+ 
+@@ -689,11 +733,14 @@ export class GameScene extends Phaser.Scene {
+         if (enemy.dead) {
+           this.waves.resolveEnemy('killed');
+           enemy.showDeathEffect();
++          this.combatAudio?.play('kill');
+           enemy.destroy();
+           return false;
+         }
+ 
+-        enemy.refreshHealthBar();
++        if (enemy.refreshHealthBar()) {
++          this.combatAudio?.play('hit');
++        }
+         return true;
+       });
+     }
+diff --git a/src/scenes/createHelpPanel.ts b/src/scenes/createHelpPanel.ts
+index d730edc..f6066ac 100644
+--- a/src/scenes/createHelpPanel.ts
++++ b/src/scenes/createHelpPanel.ts
+@@ -59,6 +59,7 @@ export function createHelpPanel(
+       '         Wait until every enemy is defeated or has escaped.',
+       'LIVES    Each escape costs 1 life; kills increase KILLS.',
+       'RESTART  R / RESTART resets the match and all towers.',
++      'AUDIO    Use AUDIO: OFF / ON in the sidebar to toggle sound.',
+     ].join('\n'),
+     {
+       fontFamily: 'monospace',
+diff --git a/src/entities/CombatAudio.ts b/src/entities/CombatAudio.ts
+new file mode 100644
+--- /dev/null
++++ b/src/entities/CombatAudio.ts
+@@ -0,0 +1,76 @@
++const CUES = {
++  shot: { from: 660, to: 440, duration: 0.05, type: 'square' },
++  hit: { from: 880, to: 660, duration: 0.06, type: 'triangle' },
++  kill: { from: 440, to: 880, duration: 0.12, type: 'triangle' },
++  escape: { from: 220, to: 110, duration: 0.18, type: 'sawtooth' },
++} as const;
++
++export class CombatAudio {
++  private enabled = false;
++  private readonly voices = new Map<OscillatorNode, GainNode>();
++
++  constructor(
++    private readonly context: AudioContext,
++    private readonly destination: AudioNode,
++  ) {}
++
++  setEnabled(enabled: boolean): void {
++    this.enabled = enabled;
++
++    if (!enabled) {
++      this.stop();
++    }
++  }
++
++  play(cue: keyof typeof CUES): void {
++    // Never queue sounds while muted or while the browser has suspended audio.
++    if (!this.enabled || this.context.state !== 'running') {
++      return;
++    }
++
++    if (cue === 'escape') {
++      this.stop();
++    }
++
++    // Free towers can fire together; keep the combined loudness bounded.
++    if (this.voices.size >= 16) {
++      return;
++    }
++
++    const tone = CUES[cue];
++    const oscillator = this.context.createOscillator();
++    const gain = this.context.createGain();
++    const now = this.context.currentTime;
++    const end = now + tone.duration;
++
++    oscillator.type = tone.type;
++    oscillator.frequency.setValueAtTime(tone.from, now);
++    oscillator.frequency.exponentialRampToValueAtTime(tone.to, end);
++    gain.gain.setValueAtTime(0, now);
++    gain.gain.linearRampToValueAtTime(0.025, now + 0.005);
++    gain.gain.exponentialRampToValueAtTime(0.0001, end);
++    oscillator.connect(gain);
++    gain.connect(this.destination);
++    this.voices.set(oscillator, gain);
++
++    oscillator.onended = () => {
++      oscillator.disconnect();
++      gain.disconnect();
++      this.voices.delete(oscillator);
++    };
++
++    oscillator.start(now);
++    oscillator.stop(end);
++  }
++
++  stop(): void {
++    for (const [oscillator, gain] of this.voices) {
++      oscillator.onended = null;
++      oscillator.stop();
++      oscillator.disconnect();
++      gain.disconnect();
++    }
++
++    this.voices.clear();
++  }
++}
+diff --git a/src/tests/CombatAudio.test.ts b/src/tests/CombatAudio.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/tests/CombatAudio.test.ts
+@@ -0,0 +1,135 @@
++import { describe, expect, it, vi } from 'vitest';
++import { CombatAudio } from '../entities/CombatAudio';
++
++const createVoice = () => ({
++  type: 'sine' as OscillatorType,
++  frequency: {
++    setValueAtTime: vi.fn(),
++    exponentialRampToValueAtTime: vi.fn(),
++  },
++  connect: vi.fn(),
++  disconnect: vi.fn(),
++  start: vi.fn(),
++  stop: vi.fn(),
++  onended: null as (() => void) | null,
++});
++
++const createGain = () => ({
++  gain: {
++    setValueAtTime: vi.fn(),
++    linearRampToValueAtTime: vi.fn(),
++    exponentialRampToValueAtTime: vi.fn(),
++  },
++  connect: vi.fn(),
++  disconnect: vi.fn(),
++});
++
++function createAudio() {
++  const voices: ReturnType<typeof createVoice>[] = [];
++  const gains: ReturnType<typeof createGain>[] = [];
++  const context = {
++    state: 'running' as AudioContextState,
++    currentTime: 10,
++    createOscillator: vi.fn(() => {
++      const voice = createVoice();
++      voices.push(voice);
++      return voice;
++    }),
++    createGain: vi.fn(() => {
++      const gain = createGain();
++      gains.push(gain);
++      return gain;
++    }),
++    close: vi.fn(),
++    suspend: vi.fn(),
++  };
++  const audio = new CombatAudio(context as unknown as AudioContext, {} as AudioNode);
++
++  return { audio, context, voices, gains };
++}
++
++describe('Combat audio lifecycle', () => {
++  it('starts muted and does not queue cues while the context is suspended', () => {
++    const { audio, context } = createAudio();
++    audio.play('shot');
++    expect(context.createOscillator).not.toHaveBeenCalled();
++
++    audio.setEnabled(true);
++    context.state = 'suspended';
++    audio.play('kill');
++    context.state = 'running';
++    expect(context.createOscillator).not.toHaveBeenCalled();
++
++    audio.play('hit');
++    expect(context.createOscillator).toHaveBeenCalledTimes(1);
++  });
++
++  it('stops active sounds on mute and does not replay them on unmute', () => {
++    const { audio, context, voices, gains } = createAudio();
++    audio.setEnabled(true);
++    audio.play('shot');
++    audio.play('hit');
++    audio.setEnabled(false);
++
++    for (const voice of voices) {
++      expect(voice.stop).toHaveBeenLastCalledWith();
++      expect(voice.disconnect).toHaveBeenCalledTimes(1);
++      expect(voice.onended).toBeNull();
++    }
++
++    for (const gain of gains) {
++      expect(gain.disconnect).toHaveBeenCalledTimes(1);
++    }
++
++    audio.setEnabled(true);
++    expect(context.createOscillator).toHaveBeenCalledTimes(2);
++    audio.play('kill');
++    expect(context.createOscillator).toHaveBeenCalledTimes(3);
++  });
++
++  it('releases completed voices so later cleanup does not stop them again', () => {
++    const { audio, voices, gains } = createAudio();
++    audio.setEnabled(true);
++    audio.play('kill');
++    voices[0].onended?.();
++    audio.stop();
++
++    expect(voices[0].stop).toHaveBeenCalledTimes(1);
++    expect(voices[0].disconnect).toHaveBeenCalledTimes(1);
++    expect(gains[0].disconnect).toHaveBeenCalledTimes(1);
++  });
++
++  it('can clean up twice without closing or suspending the shared context', () => {
++    const { audio, context, voices, gains } = createAudio();
++    audio.setEnabled(true);
++    audio.play('shot');
++    audio.play('hit');
++    audio.stop();
++    audio.stop();
++
++    for (const voice of voices) {
++      expect(voice.stop).toHaveBeenCalledTimes(2);
++      expect(voice.disconnect).toHaveBeenCalledTimes(1);
++    }
++
++    for (const gain of gains) {
++      expect(gain.disconnect).toHaveBeenCalledTimes(1);
++    }
++
++    expect(context.close).not.toHaveBeenCalled();
++    expect(context.suspend).not.toHaveBeenCalled();
++  });
++
++  it('lets an escape warning replace existing combat sounds', () => {
++    const { audio, context, voices } = createAudio();
++    audio.setEnabled(true);
++    audio.play('shot');
++    audio.play('kill');
++    audio.play('escape');
++
++    expect(context.createOscillator).toHaveBeenCalledTimes(3);
++    expect(voices[0].disconnect).toHaveBeenCalledTimes(1);
++    expect(voices[1].disconnect).toHaveBeenCalledTimes(1);
++    expect(voices[2].stop).toHaveBeenCalledTimes(1);
++  });
++});

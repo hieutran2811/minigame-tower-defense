@@ -1,0 +1,1040 @@
+diff --git a/README.md b/README.md
+index b5208e6..c3af912 100644
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,7 @@
+-# Mini Tower Defense — Milestone 10
++# The Last Beacon — Milestone 11
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+-The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
++Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
+ All graphics are procedural pixel-style shapes.
+ 
+ ## Requirements and development
+@@ -18,20 +18,22 @@ build label appear only in development.
+ 
+ ## Controls
+ 
+-1. Click **BASIC TOWER**, then left-click empty grass to place a tower.
+-2. Green previews mark valid tiles; red previews mark path/occupied tiles. The
++1. On first launch, choose **PLAY** in the story menu, or press **Esc** to start
++   on Border Watch. No wave starts automatically.
++2. Click **BASIC TOWER**, then left-click empty ground to place a tower.
++3. Green previews mark valid tiles; red previews mark path/occupied tiles. The
+    circle shows the tower's 128px range and is clipped to the map bounds.
+-3. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
++4. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
+    cancels selection.
+-4. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
++5. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
+    running, and shows **MATCH OVER** after victory/defeat.
+-5. After all enemies in a wave are resolved, place more towers or start the
++6. After all enemies in a wave are resolved, place more towers or start the
+    next wave manually.
+-6. Click **RESTART** at any time to reset the entire match.
+-7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
++7. Click **RESTART** at any time to reset the current map's match.
++8. Click **HOW TO PLAY** or press **H** to open help before/between waves or
+    after the result. Close it with **H**, **Esc**, or the close button. During a
+    wave, the help button is dimmed and reads **HELP AFTER WAVE**.
+-8. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
++9. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
+    to mute immediately. Audio starts off, and your choice survives Restart but
+    resets on a page reload. The audio button works during waves, with help open,
+    and after a result. It shows **AUDIO UNAVAILABLE** when Web Audio is unavailable.
+@@ -44,10 +46,11 @@ Keyboard shortcuts use the same actions as the buttons:
+ | N | Start the next wave only when ready |
+ | R | Restart at any time, including with help open or after a result |
+ | H | Open/close help outside active waves |
+-| Esc | Close help or cancel building/inspection |
++| Esc | Close the level menu/help or cancel building/inspection |
+ 
+ Holding B, N, R, or H does not repeat the action. With help open, B and N are
+ blocked while R still resets the match. After a result, B and N stay locked.
++With the level menu open, B/N/H are blocked; R still restarts the current map.
+ 
+ Help explains the objective, placement colors, tower inspection, manual waves,
+ lives, Restart, and current tower stats. Opening it closes build/inspection
+@@ -67,8 +70,42 @@ Sidebar/footer clicks never place towers. Placement is allowed before and during
+ waves, and stops after victory/defeat, when the tower button shows **BUILD LOCKED**.
+ Towers have no cost. Progress and placement are not saved.
+ 
++## Campaign: The Last Beacon
++
++The Dawn Guard must keep the Hollow host away from the last beacon. Open
++**LEVEL n/3** in the sidebar to read the chapter stories and choose a map before
++or between waves, or after a result. Level selection is disabled during a wave.
++
++| Chapter | Setting | Path tiles |
++| --- | --- | --- |
++| 1. Border Watch | Hold the border road for the Dawn Guard | 19 (original map) |
++| 2. Whispering Grove | Protect refugees on a winding forest trail | 29 |
++| 3. Dawn Keep | Defend the last beacon until the guard rallies | 25 |
++
++Each chapter has a different path and palette. The beacon gate, IN/OUT markers,
++movement, placement rules, and escape warning all use the selected map's path.
++Story text and palettes are in `src/data/levels.ts`.
++
++All three chapters are available immediately. Choosing PLAY starts that chapter
++fresh: 10 lives, 0 kills/towers, wave 1 waiting for manual input, and no old
++enemies/projectiles/effects. Choosing the current chapter replays it. Restart/R
++replays the current chapter, with the menu closed and audio preference preserved.
++The story menu opens automatically only on first launch; a page reload returns
++to Border Watch and resets that first-launch state.
++
++The level menu blocks map clicks and build/Start Wave/help controls while open.
++Esc or CLOSE dismisses it. Restart and audio remain available in the sidebar.
++Opening the level menu closes help and clears placement/inspection selection.
++
++Win chapter one/two to reveal **NEXT LEVEL**. Clicking it starts a fresh match on
++the next map; its first wave still waits for input. No chapter advances
++automatically. The final chapter ends the story and offers Restart or level
++selection. There are no unlock requirements or persistent campaign scores.
++
+ ## Waves, lives, and outcomes
+ 
++These rules apply separately to every chapter:
++
+ | Wave | Enemies | Spawn interval |
+ | --- | --- | --- |
+ | 1 | 5 | 1 second |
+@@ -141,7 +178,7 @@ and starting lives are in `src/config/waveConfig.ts`.
+ 
+ ## Quick play checks
+ 
+-To test victory, place towers on these zero-based tiles before starting:
++On Border Watch, test victory by placing towers on these zero-based tiles:
+ 
+ ```text
+ (0,2) (1,2) (2,2) (3,2)
+@@ -164,7 +201,29 @@ npm run preview
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 10 verification status
++### Milestone 11 verification status
++
++The approved expansion direction is fantasy maps/story, followed by enemy/tower
++variety and stronger visuals. M11 implements the campaign foundation only:
++three chapter definitions, a story/selection panel, selected-map rendering and
++path usage, fresh matches on selection, and manual NEXT LEVEL after victory.
++The initial chapter preserves the original path and combat/wave rules.
++
++- Added 11 tests in `levels.test.ts` for the original map, three unique chapters,
++  path bounds/continuity, valid placement, and movement along each actual route.
++- A separate static coordinate check passed for all three definitions: 19/29/25
++  path tiles, no repeated cells, no diagonal/gapped steps, and valid edge endpoints.
++  This check does not execute Vitest or Phaser.
++- `npm run test` and `npm run build` were attempted after M11 implementation. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. The new tests and M11 build are not yet confirmed.
++- Source review covered shared selected-path use, input blocking, fresh-match
++  transitions, Restart's selected chapter, and captured NEXT LEVEL callbacks.
++  Browser verification of all three maps and repeated transitions is pending.
++- No dependencies were added. Enemy/tower variety remains for subsequent
++  milestones in [docs/roadmap.md](docs/roadmap.md).
++
++### Milestone 10 verification status (previously recorded)
+ 
+ The approved M10 scope is combat audio with an on/off button. `CombatAudio.ts`
+ generates tones using Phaser's shared Web Audio context/destination; it does not
+@@ -276,6 +335,21 @@ sharpness on other displays still need manual verification.
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Reload: confirm the first-launch story menu has three readable chapters.
++      Choose PLAY or close with Esc; confirm no enemy appears before Start Wave.
++- [ ] Play each map: compare the path with markers, movement, placement rejection,
++      and exit warning. Check distinct palettes and the gate below enemies/HP bars.
++- [ ] Open LEVEL while building/inspecting: selection must clear; B/N/H and map
++      clicks must not act through the menu. Closing it must restore valid controls.
++- [ ] During a wave, confirm level selection is disabled while building/Restart
++      continue to work. Check it becomes available between waves and after results.
++- [ ] Select/replay a chapter after building or losing lives: confirm 10 lives,
++      0 kills/towers, no old entities/effects, and a manually waiting first wave.
++- [ ] Win Border Watch, click NEXT LEVEL, then repeat through Dawn Keep. Check
++      fresh state each time, no automatic waves, and no NEXT LEVEL after chapter 3.
++- [ ] Restart/R on maps 2 and 3, including with menus open: keep that map selected,
++      close panels, clear match state, preserve audio choice, and avoid duplicate
++      spawns or listeners. Repeat level changes and inspect the browser console.
+ - [ ] Reload the page: AUDIO: OFF is the default. Play briefly while muted and
+       confirm silence. Enable audio and hear new shot/hit/kill/escape cues only.
+ - [ ] Mute during combat: all current tones should stop immediately. Unmute and
+@@ -363,7 +437,7 @@ sharpness on other displays still need manual verification.
+ ## Project structure
+ 
+ - `src/config`: dimensions, combat constants, and wave/life settings.
+-- `src/data`: the fixed orthogonal path.
++- `src/data`: chapter stories, palettes, orthogonal paths, and the original map.
+ - `src/systems`: pure movement, placement, combat, and wave/match logic.
+ - `src/entities`: Phaser enemy, tower, and projectile presentation.
+ - `src/scenes`: rendering, input, wave/combat orchestration, and result UI.
+@@ -389,11 +463,14 @@ M10 adds optional generated combat tones, a sidebar audio toggle, resource clean
+ on mute/Restart, and audio lifecycle unit tests. The UI preference persists across
+ Restart; game state still resets completely. Phaser handles context unlocking and
+ tab suspension/resume. The game stays playable without Web Audio.
+-Economy, upgrades, selling, and multiple enemy types remain out of scope.
++M11 adds the three-map fantasy campaign, story menu, level selection, map palettes,
++beacon gate, and manual next chapter. Combat and waves remain the same per map.
++Enemy and tower variety is planned next; economy, upgrades, and selling remain out
++of scope. See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 through M10 build verification is pending as described above.
++M5 through M11 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+index 2938fb9..577dae6 100644
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -6,7 +6,8 @@ import {
+ } from '../config/combatConfig';
+ import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+ import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+-import { PATH_TILES, type Point } from '../data/map';
++import { LEVELS, type LevelDefinition } from '../data/levels';
++import type { Point } from '../data/map';
+ import { CombatAudio } from '../entities/CombatAudio';
+ import { Enemy } from '../entities/Enemy';
+ import { Projectile } from '../entities/Projectile';
+@@ -14,6 +15,7 @@ import { Tower } from '../entities/Tower';
+ import { TowerPlacement } from '../systems/TowerPlacement';
+ import { WaveSystem } from '../systems/WaveSystem';
+ import { createHelpPanel } from './createHelpPanel';
++import { createLevelPanel } from './createLevelPanel';
+ import { drawPathGuides } from './drawPathGuides';
+ 
+ export class GameScene extends Phaser.Scene {
+@@ -28,6 +30,10 @@ export class GameScene extends Phaser.Scene {
+   private waveButton!: Phaser.GameObjects.Text;
+   private helpButton!: Phaser.GameObjects.Text;
+   private helpPanel!: Phaser.GameObjects.Container;
++  private levelButton!: Phaser.GameObjects.Text;
++  private levelPanel!: Phaser.GameObjects.Container;
++  private levelIndex = 0;
++  private campaignIntroShown = false;
+   private audioButton!: Phaser.GameObjects.Text;
+   private combatAudio?: CombatAudio;
+   private audioEnabled = false;
+@@ -44,8 +50,12 @@ export class GameScene extends Phaser.Scene {
+     super('GameScene');
+   }
+ 
++  private get level(): LevelDefinition {
++    return LEVELS[this.levelIndex];
++  }
++
+   create(): void {
+-    this.placement = new TowerPlacement(COLS, ROWS, PATH_TILES);
++    this.placement = new TowerPlacement(COLS, ROWS, this.level.path);
+     this.waves = new WaveSystem(WAVE_COUNTS, SPAWN_INTERVAL, STARTING_LIVES);
+     this.towerSelected = false;
+     this.towers = [];
+@@ -59,11 +69,12 @@ export class GameScene extends Phaser.Scene {
+     this.combatAudio?.setEnabled(this.audioEnabled);
+ 
+     this.drawMap();
+-    drawPathGuides(this);
++    drawPathGuides(this, this.level.path);
+     this.createHud();
+     this.createPlacementControls();
+     this.createMatchControls();
+     this.createHelpControls();
++    this.createLevelControls();
+     this.createAudioControls();
+     this.refreshHud();
+ 
+@@ -91,29 +102,28 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private drawMap(): void {
+-    const pathSet = new Set(PATH_TILES.map((point) => `${point.x},${point.y}`));
++    const colors = this.level.colors;
++    const pathSet = new Set(this.level.path.map((point) => `${point.x},${point.y}`));
+     const graphics = this.add.graphics();
+ 
+     for (let y = 0; y < ROWS; y++) {
+       for (let x = 0; x < COLS; x++) {
+         const isPath = pathSet.has(`${x},${y}`);
+         const base = isPath
+-          ? 0xb9905e
+-          : (x + y) % 2 === 0
+-            ? 0x70a855
+-            : 0x669e4d;
++          ? colors.path
++          : colors.grass[(x + y) % 2];
+ 
+         graphics.fillStyle(base).fillRect(x * TILE, y * TILE, TILE, TILE);
+         graphics
+-          .lineStyle(1, isPath ? 0x967046 : 0x598747, 0.55)
++          .lineStyle(1, isPath ? colors.pathEdge : colors.grassEdge, 0.55)
+           .strokeRect(x * TILE, y * TILE, TILE, TILE);
+ 
+         if (!isPath && (x * 17 + y * 23) % 7 === 0) {
+           graphics
+-            .fillStyle(0x3c753e)
++            .fillStyle(colors.grassDark)
+             .fillRect(x * TILE + 15, y * TILE + 18, 8, 5);
+           graphics
+-            .fillStyle(0x9dc875)
++            .fillStyle(colors.grassLight)
+             .fillRect(x * TILE + 18, y * TILE + 15, 4, 4);
+         }
+       }
+@@ -123,7 +133,7 @@ export class GameScene extends Phaser.Scene {
+       .fillStyle(0x202d39)
+       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
+ 
+-    const exit = PATH_TILES[PATH_TILES.length - 1];
++    const exit = this.level.path[this.level.path.length - 1];
+     this.exitFlash = this.add
+       .rectangle(
+         (exit.x + 0.5) * TILE,
+@@ -142,10 +152,21 @@ export class GameScene extends Phaser.Scene {
+       fontSize: '17px',
+       color: '#f5e6ae',
+     });
+-    this.add.text(786, 68, 'MILESTONE 10', {
+-      fontFamily: 'monospace',
+-      fontSize: '14px',
+-      color: '#b4d9bc',
++    this.levelButton = this.add
++      .text(786, 68, '', {
++        fontFamily: 'monospace',
++        fontSize: '13px',
++        color: '#f5e6ae',
++        backgroundColor: '#33485c',
++        fixedWidth: 148,
++        align: 'center',
++        padding: { x: 8, y: 6 },
++      })
++      .setInteractive({ useHandCursor: true });
++    this.levelButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
++      if (pointer.leftButtonDown()) {
++        this.toggleLevelPanel();
++      }
+     });
+     this.livesText = this.add.text(786, 112, '', {
+       fontFamily: 'monospace',
+@@ -160,8 +181,8 @@ export class GameScene extends Phaser.Scene {
+     });
+ 
+     const title = import.meta.env.DEV
+-      ? 'PIXEL DEFENSE  /  DEVELOPMENT BUILD'
+-      : 'PIXEL DEFENSE';
++      ? `${this.level.title} / DEVELOPMENT BUILD`
++      : this.level.title;
+ 
+     this.add.text(24, 540, title, {
+       fontFamily: 'monospace',
+@@ -246,7 +267,10 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private toggleBuild(event?: KeyboardEvent): void {
+-    if (event?.repeat || this.waves.finished || this.helpPanel.visible) {
++    if (
++      event?.repeat || this.waves.finished || this.helpPanel.visible ||
++      this.levelPanel.visible
++    ) {
+       return;
+     }
+ 
+@@ -258,7 +282,7 @@ export class GameScene extends Phaser.Scene {
+       this.towerButton
+         .setText('CANCEL BUILD')
+         .setBackgroundColor('#236b88');
+-      this.placementText.setText('Click grass to place.\nB or Esc to cancel.');
++      this.placementText.setText('Click empty ground.\nB or Esc to cancel.');
+ 
+       if (this.input.manager.isOver) {
+         this.updatePlacementPreview(this.input.activePointer);
+@@ -311,6 +335,11 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private cancelSelection(): void {
++    if (this.levelPanel.visible) {
++      this.toggleLevelPanel();
++      return;
++    }
++
+     if (this.helpPanel.visible) {
+       this.toggleHelp();
+       return;
+@@ -333,7 +362,10 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
+-    if (this.waves.finished || this.helpPanel.visible || !pointer.leftButtonDown()) {
++    if (
++      this.waves.finished || this.helpPanel.visible || this.levelPanel.visible ||
++      !pointer.leftButtonDown()
++    ) {
+       return;
+     }
+ 
+@@ -440,7 +472,10 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private startNextWave(event?: KeyboardEvent): void {
+-    if (event?.repeat || this.helpPanel.visible || this.waves.state !== 'ready') {
++    if (
++      event?.repeat || this.helpPanel.visible || this.levelPanel.visible ||
++      this.waves.state !== 'ready'
++    ) {
+       return;
+     }
+ 
+@@ -481,6 +516,40 @@ export class GameScene extends Phaser.Scene {
+     });
+   }
+ 
++  private createLevelControls(): void {
++    this.levelPanel = createLevelPanel(
++      this,
++      this.levelIndex,
++      (index) => this.selectLevel(index),
++      () => this.toggleLevelPanel(),
++    );
++    this.levelPanel.setVisible(!this.campaignIntroShown);
++    this.campaignIntroShown = true;
++  }
++
++  private toggleLevelPanel(): void {
++    if (this.waves.state === 'running') {
++      return;
++    }
++
++    if (!this.levelPanel.visible) {
++      this.helpPanel.setVisible(false);
++      this.cancelSelection();
++    }
++
++    this.levelPanel.setVisible(!this.levelPanel.visible);
++    this.refreshHud();
++  }
++
++  private selectLevel(index: number): void {
++    if (this.waves.state === 'running' || !LEVELS[index]) {
++      return;
++    }
++
++    this.levelIndex = index;
++    this.scene.restart();
++  }
++
+   private createAudioControls(): void {
+     this.audioButton = this.add
+       .text(786, 608, '', {
+@@ -512,7 +581,7 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private toggleHelp(event?: KeyboardEvent): void {
+-    if (event?.repeat || this.waves.state === 'running') {
++    if (event?.repeat || this.waves.state === 'running' || this.levelPanel.visible) {
+       return;
+     }
+ 
+@@ -525,7 +594,7 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private spawnEnemy(ageSeconds: number): void {
+-    const path = PATH_TILES.map((point) => ({
++    const path = this.level.path.map((point) => ({
+       x: (point.x + 0.5) * TILE,
+       y: (point.y + 0.5) * TILE,
+     }));
+@@ -582,11 +651,13 @@ export class GameScene extends Phaser.Scene {
+     this.placementText.setText('Match finished.\nPress RESTART.');
+ 
+     const won = this.waves.state === 'won';
++    const nextLevel = this.levelIndex + 1;
++    const hasNextLevel = won && nextLevel < LEVELS.length;
+     const panel = this.add
+-      .rectangle(0, 0, 480, 260, 0x15202b, 0.96)
++      .rectangle(0, 0, 480, 300, 0x15202b, 0.96)
+       .setStrokeStyle(3, won ? 0x91ff9e : 0xff7373);
+     const title = this.add
+-      .text(0, -85, won ? 'VICTORY' : 'DEFEAT', {
++      .text(0, -105, won ? 'VICTORY' : 'DEFEAT', {
+         fontFamily: 'monospace',
+         fontSize: '30px',
+         color: won ? '#91ff9e' : '#ff7373',
+@@ -595,7 +666,7 @@ export class GameScene extends Phaser.Scene {
+     const stats = this.add
+       .text(
+         0,
+-        -5,
++        -25,
+         `WAVE ${this.waves.waveNumber}/${this.waves.totalWaves}    KILLS ${this.waves.kills}\nLIVES ${this.waves.lives}     TOWERS ${this.placement.count}`,
+         {
+           fontFamily: 'monospace',
+@@ -607,25 +678,65 @@ export class GameScene extends Phaser.Scene {
+       )
+       .setOrigin(0.5);
+     const detail = this.add
+-      .text(0, 90, 'Press RESTART to play again.', {
+-        fontFamily: 'monospace',
+-        fontSize: '16px',
+-        color: '#ffffff',
+-      })
++      .text(
++        0,
++        55,
++        hasNextLevel
++          ? 'The road is safe. Continue to the next chapter.'
++          : won
++            ? 'The last beacon shines again.\nPress RESTART to play again.'
++            : 'Press RESTART to play again.',
++        {
++          fontFamily: 'monospace',
++          fontSize: '16px',
++          color: '#ffffff',
++          align: 'center',
++          wordWrap: { width: 430 },
++        },
++      )
+       .setOrigin(0.5);
+ 
+-    this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, [
+-      panel,
+-      title,
+-      stats,
+-      detail,
+-    ]).setDepth(20);
++    const content: Phaser.GameObjects.GameObject[] = [panel, title, stats, detail];
++
++    if (hasNextLevel) {
++      const nextButton = this.add
++        .text(0, 110, 'NEXT LEVEL', {
++          fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
++          backgroundColor: '#236b88', fixedWidth: 200, align: 'center',
++          padding: { x: 8, y: 8 },
++        })
++        .setOrigin(0.5)
++        .setInteractive({ useHandCursor: true });
++      nextButton.on(
++        'pointerdown',
++        (
++          pointer: Phaser.Input.Pointer,
++          _x: number,
++          _y: number,
++          event: Phaser.Types.Input.EventData,
++        ) => {
++          event.stopPropagation();
++          if (pointer.leftButtonDown()) {
++            this.selectLevel(nextLevel);
++          }
++        },
++      );
++      content.push(nextButton);
++    }
++
++    this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, content).setDepth(20);
+   }
+ 
+   private refreshHud(): void {
+     const waves = this.waves;
+     const ready = waves.state === 'ready';
+-    const waveAvailable = ready && !this.helpPanel.visible;
++    const panelOpen = this.helpPanel.visible || this.levelPanel.visible;
++    const waveAvailable = ready && !panelOpen;
++    const readyLabel = this.levelPanel.visible
++      ? 'CLOSE LEVEL MENU'
++      : this.helpPanel.visible
++        ? 'CLOSE HELP FIRST'
++        : `START WAVE ${waves.waveNumber + 1}`;
+ 
+     this.livesText.setText(`LIVES ${waves.lives}`);
+     this.matchText.setText(
+@@ -634,9 +745,7 @@ export class GameScene extends Phaser.Scene {
+     this.waveButton
+       .setText(
+         ready
+-          ? this.helpPanel.visible
+-            ? 'CLOSE HELP FIRST'
+-            : `START WAVE ${waves.waveNumber + 1}`
++          ? readyLabel
+           : waves.state === 'running'
+             ? 'WAVE RUNNING'
+             : 'MATCH OVER',
+@@ -645,24 +754,35 @@ export class GameScene extends Phaser.Scene {
+       .setAlpha(waveAvailable ? 1 : 0.55);
+ 
+     this.waveButton.input!.enabled = waveAvailable;
+-    this.towerButton.input!.enabled = !waves.finished && !this.helpPanel.visible;
+-    this.towerButton.setAlpha(waves.finished || this.helpPanel.visible ? 0.55 : 1);
+-
+-    const helpAvailable = waves.state !== 'running';
++    this.towerButton.input!.enabled = !waves.finished && !panelOpen;
++    this.towerButton.setAlpha(waves.finished || panelOpen ? 0.55 : 1);
++
++    const helpAvailable = waves.state !== 'running' && !this.levelPanel.visible;
++    const helpLabel = this.levelPanel.visible
++      ? 'CLOSE LEVEL MENU'
++      : this.helpPanel.visible
++        ? 'CLOSE HELP'
++        : 'HOW TO PLAY';
+     this.helpButton
+       .setText(
+-        !helpAvailable
++        waves.state === 'running'
+           ? 'HELP AFTER WAVE'
+-          : this.helpPanel.visible
+-            ? 'CLOSE HELP'
+-            : 'HOW TO PLAY',
++          : helpLabel,
+       )
+       .setAlpha(helpAvailable ? 1 : 0.55);
+     this.helpButton.input!.enabled = helpAvailable;
++    this.levelButton
++      .setText(
++        this.levelPanel.visible
++          ? 'CLOSE LEVELS'
++          : `LEVEL ${this.levelIndex + 1}/${LEVELS.length}`,
++      )
++      .setAlpha(waves.state === 'running' ? 0.55 : 1);
++    this.levelButton.input!.enabled = waves.state !== 'running';
+ 
+     if (ready) {
+       this.phaseText.setText(
+-        `Ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
++        `${this.level.title}: ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
+       );
+     } else if (waves.state === 'running') {
+       this.phaseText.setText(
+@@ -670,7 +790,7 @@ export class GameScene extends Phaser.Scene {
+       );
+     } else {
+       this.phaseText.setText(
+-        waves.state === 'won' ? 'All 3 waves cleared.' : 'No lives remaining.',
++        waves.state === 'won' ? `${this.level.title}: all waves cleared.` : 'No lives remaining.',
+       );
+     }
+   }
+diff --git a/src/scenes/createHelpPanel.ts b/src/scenes/createHelpPanel.ts
+index f6066ac..6340727 100644
+--- a/src/scenes/createHelpPanel.ts
++++ b/src/scenes/createHelpPanel.ts
+@@ -40,7 +40,7 @@ export function createHelpPanel(
+   const objective = scene.add.text(
+     -320,
+     -162,
+-    `Keep at least one of your ${STARTING_LIVES} lives through all ${WAVE_COUNTS.length} waves.`,
++    `Each map: survive ${WAVE_COUNTS.length} waves with at least 1 of your ${STARTING_LIVES} lives.`,
+     {
+       fontFamily: 'monospace',
+       fontSize: '15px',
+@@ -53,7 +53,7 @@ export function createHelpPanel(
+     -116,
+     [
+       'BUILD    B / BASIC TOWER selects or cancels building.',
+-      '         Click grass. Green = valid; red = blocked.',
++      '         Click empty ground. Green = valid; red = blocked.',
+       'INSPECT  Esc cancels building; click a placed tower.',
+       `WAVES    N / START WAVE: ${WAVE_COUNTS.join(' / ')} enemies.`,
+       '         Wait until every enemy is defeated or has escaped.',
+@@ -76,7 +76,7 @@ export function createHelpPanel(
+     { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
+   );
+   const hint = scene.add
+-    .text(0, 140, 'Close help to use B / N. R also works while help is open.', {
++    .text(0, 140, 'Use LEVEL to change maps. R restarts the current map.', {
+       fontFamily: 'monospace',
+       fontSize: '13px',
+       color: '#aab7bd',
+diff --git a/src/scenes/drawPathGuides.ts b/src/scenes/drawPathGuides.ts
+index 11bd194..e3ba062 100644
+--- a/src/scenes/drawPathGuides.ts
++++ b/src/scenes/drawPathGuides.ts
+@@ -1,15 +1,18 @@
+ import type Phaser from 'phaser';
+ import { TILE } from '../config/gameConfig';
+-import { PATH_TILES } from '../data/map';
++import { PATH_TILES, type Point } from '../data/map';
+ 
+-export function drawPathGuides(scene: Phaser.Scene): void {
++export function drawPathGuides(
++  scene: Phaser.Scene,
++  path: readonly Point[] = PATH_TILES,
++): void {
+   // Ground markings stay below towers and enemies.
+   const graphics = scene.add.graphics().setDepth(0.5);
+ 
+-  for (let index = 1; index < PATH_TILES.length - 1; index++) {
+-    const previous = PATH_TILES[index - 1];
+-    const current = PATH_TILES[index];
+-    const next = PATH_TILES[index + 1];
++  for (let index = 1; index < path.length - 1; index++) {
++    const previous = path[index - 1];
++    const current = path[index];
++    const next = path[index + 1];
+     const dx = next.x - current.x;
+     const dy = next.y - current.y;
+ 
+@@ -29,10 +32,23 @@ export function drawPathGuides(scene: Phaser.Scene): void {
+       .strokePath();
+   }
+ 
++  const exit = path[path.length - 1];
++  const gateX = exit.x * TILE;
++  const gateY = exit.y * TILE;
++  graphics
++    .fillStyle(0x33485c)
++    .fillRect(gateX + 16, gateY + 28, 32, 24)
++    .fillRect(gateX + 12, gateY + 22, 10, 30)
++    .fillRect(gateX + 42, gateY + 22, 10, 30)
++    .fillStyle(0x15202b)
++    .fillRect(gateX + 28, gateY + 39, 8, 13)
++    .fillStyle(0xf5e6ae)
++    .fillRect(gateX + 29, gateY + 23, 6, 8);
++
+   const endpoints = [
+-    { tile: PATH_TILES[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
++    { tile: path[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
+     {
+-      tile: PATH_TILES[PATH_TILES.length - 1],
++      tile: exit,
+       label: 'OUT',
+       color: 0x873d34,
+       textColor: '#ffe1d8',
+diff --git a/src/data/levels.ts b/src/data/levels.ts
+new file mode 100644
+--- /dev/null
++++ b/src/data/levels.ts
+@@ -0,0 +1,82 @@
++import { PATH_TILES, type Point } from './map';
++
++export type LevelDefinition = {
++  id: string;
++  title: string;
++  story: string;
++  path: readonly Point[];
++  colors: {
++    grass: readonly [number, number];
++    path: number;
++    pathEdge: number;
++    grassEdge: number;
++    grassDark: number;
++    grassLight: number;
++  };
++};
++
++export const LEVELS: readonly LevelDefinition[] = [
++  {
++    id: 'border-watch',
++    title: 'BORDER WATCH',
++    story: 'Border lanterns are going dark. Hold the watchpost and keep the road open for the Dawn Guard.',
++    path: PATH_TILES,
++    colors: {
++      grass: [0x70a855, 0x669e4d],
++      path: 0xb9905e,
++      pathEdge: 0x967046,
++      grassEdge: 0x598747,
++      grassDark: 0x3c753e,
++      grassLight: 0x9dc875,
++    },
++  },
++  {
++    id: 'whispering-grove',
++    title: 'WHISPERING GROVE',
++    story: 'The Hollow host has reached the grove. Guard the winding trail so the refugees can reach the keep.',
++    path: [
++      { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
++      { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 3 },
++      { x: 4, y: 3 }, { x: 5, y: 3 }, { x: 5, y: 2 },
++      { x: 5, y: 1 }, { x: 6, y: 1 }, { x: 7, y: 1 },
++      { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 },
++      { x: 8, y: 4 }, { x: 7, y: 4 }, { x: 6, y: 4 },
++      { x: 5, y: 4 }, { x: 4, y: 4 }, { x: 4, y: 5 },
++      { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 },
++      { x: 7, y: 6 }, { x: 8, y: 6 }, { x: 9, y: 6 },
++      { x: 10, y: 6 }, { x: 11, y: 6 },
++    ],
++    colors: {
++      grass: [0x4a785b, 0x416e52],
++      path: 0x969174,
++      pathEdge: 0x696b50,
++      grassEdge: 0x335941,
++      grassDark: 0x284e3b,
++      grassLight: 0x88af83,
++    },
++  },
++  {
++    id: 'dawn-keep',
++    title: 'DAWN KEEP',
++    story: 'The last beacon stands beyond the ruins. Defend its approach until the Dawn Guard can rally at the gate.',
++    path: [
++      { x: 0, y: 6 }, { x: 1, y: 6 }, { x: 2, y: 6 },
++      { x: 3, y: 6 }, { x: 3, y: 5 }, { x: 3, y: 4 },
++      { x: 3, y: 3 }, { x: 2, y: 3 }, { x: 1, y: 3 },
++      { x: 1, y: 2 }, { x: 1, y: 1 }, { x: 2, y: 1 },
++      { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 5, y: 1 },
++      { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 },
++      { x: 7, y: 3 }, { x: 8, y: 3 }, { x: 9, y: 3 },
++      { x: 9, y: 4 }, { x: 9, y: 5 }, { x: 10, y: 5 },
++      { x: 11, y: 5 },
++    ],
++    colors: {
++      grass: [0x676d7c, 0x5c6271],
++      path: 0xb5aaa0,
++      pathEdge: 0x7a7776,
++      grassEdge: 0x494e5e,
++      grassDark: 0x393f50,
++      grassLight: 0x9ba4ae,
++    },
++  },
++];
+diff --git a/src/scenes/createLevelPanel.ts b/src/scenes/createLevelPanel.ts
+new file mode 100644
+--- /dev/null
++++ b/src/scenes/createLevelPanel.ts
+@@ -0,0 +1,99 @@
++import type Phaser from 'phaser';
++import { COLS, ROWS, TILE } from '../config/gameConfig';
++import { LEVELS } from '../data/levels';
++
++export function createLevelPanel(
++  scene: Phaser.Scene,
++  selected: number,
++  onSelect: (index: number) => void,
++  onClose: () => void,
++): Phaser.GameObjects.Container {
++  const backdrop = scene.add
++    .rectangle(0, 0, COLS * TILE, ROWS * TILE, 0x0b1420, 0.8)
++    .setInteractive();
++  backdrop.on(
++    'pointerdown',
++    (
++      _pointer: Phaser.Input.Pointer,
++      _x: number,
++      _y: number,
++      event: Phaser.Types.Input.EventData,
++    ) => event.stopPropagation(),
++  );
++
++  const panel = scene.add
++    .rectangle(0, 0, 704, 456, 0x202d39)
++    .setStrokeStyle(2, 0xf5e6ae);
++  const title = scene.add
++    .text(0, -200, 'THE LAST BEACON', {
++      fontFamily: 'monospace', fontSize: '24px', color: '#f5e6ae',
++    })
++    .setOrigin(0.5);
++  const content: Phaser.GameObjects.GameObject[] = [backdrop, panel, title];
++
++  LEVELS.forEach((level, index) => {
++    const y = -112 + index * 104;
++    const card = scene.add
++      .rectangle(0, y, 640, 88, 0x15202b)
++      .setStrokeStyle(1, index === selected ? 0xf5e6ae : 0x496174);
++    const name = scene.add.text(-300, y - 30, `${index + 1}. ${level.title}`, {
++      fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5',
++    });
++    const story = scene.add.text(-300, y - 5, level.story, {
++      fontFamily: 'monospace', fontSize: '12px', color: '#d3ddd5',
++      wordWrap: { width: 430 }, lineSpacing: 3,
++    });
++    const button = scene.add
++      .text(240, y, 'PLAY', {
++        fontFamily: 'monospace', fontSize: '13px', color: '#ffffff',
++        backgroundColor: '#236b88', fixedWidth: 96, align: 'center',
++        padding: { x: 6, y: 10 },
++      })
++      .setOrigin(0.5)
++      .setInteractive({ useHandCursor: true });
++    button.on(
++      'pointerdown',
++      (
++        pointer: Phaser.Input.Pointer,
++        _x: number,
++        _y: number,
++        event: Phaser.Types.Input.EventData,
++      ) => {
++        event.stopPropagation();
++        if (pointer.leftButtonDown()) {
++          onSelect(index);
++        }
++      },
++    );
++    content.push(card, name, story, button);
++  });
++
++  const closeButton = scene.add
++    .text(0, 190, 'CLOSE (ESC)', {
++      fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
++      backgroundColor: '#33485c', fixedWidth: 200, align: 'center',
++      padding: { x: 8, y: 10 },
++    })
++    .setOrigin(0.5)
++    .setInteractive({ useHandCursor: true });
++  closeButton.on(
++    'pointerdown',
++    (
++      pointer: Phaser.Input.Pointer,
++      _x: number,
++      _y: number,
++      event: Phaser.Types.Input.EventData,
++    ) => {
++      event.stopPropagation();
++      if (pointer.leftButtonDown()) {
++        onClose();
++      }
++    },
++  );
++  content.push(closeButton);
++
++  return scene.add
++    .container((COLS * TILE) / 2, (ROWS * TILE) / 2, content)
++    .setDepth(30)
++    .setVisible(false);
++}
+diff --git a/src/tests/levels.test.ts b/src/tests/levels.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/tests/levels.test.ts
+@@ -0,0 +1,79 @@
++import { describe, expect, it } from 'vitest';
++import { COLS, ROWS, TILE } from '../config/gameConfig';
++import { LEVELS } from '../data/levels';
++import { PATH_TILES } from '../data/map';
++import { PathFollower } from '../systems/PathFollower';
++import { TowerPlacement } from '../systems/TowerPlacement';
++
++describe('Campaign level data', () => {
++  it('preserves the original map in chapter one', () => {
++    expect(LEVELS[0].path).toEqual(PATH_TILES);
++  });
++
++  it('provides three distinct chapters and paths for the level menu', () => {
++    expect(LEVELS).toHaveLength(3);
++    expect(new Set(LEVELS.map((level) => level.id)).size).toBe(3);
++    expect(new Set(LEVELS.map((level) => JSON.stringify(level.path))).size).toBe(3);
++  });
++
++  for (const level of LEVELS) {
++    describe(level.title, () => {
++      it('keeps a continuous, non-repeating orthogonal path inside the map', () => {
++        expect(level.path.length).toBeGreaterThan(1);
++        const cells = new Set(level.path.map((point) => `${point.x},${point.y}`));
++        expect(cells.size).toBe(level.path.length);
++        expect(level.path[0].x).toBe(0);
++        expect(level.path[level.path.length - 1].x).toBe(COLS - 1);
++
++        level.path.forEach((point, index) => {
++          expect(Number.isInteger(point.x) && Number.isInteger(point.y)).toBe(true);
++          expect(point.x).toBeGreaterThanOrEqual(0);
++          expect(point.x).toBeLessThan(COLS);
++          expect(point.y).toBeGreaterThanOrEqual(0);
++          expect(point.y).toBeLessThan(ROWS);
++
++          if (index > 0) {
++            const previous = level.path[index - 1];
++            expect(Math.abs(point.x - previous.x) + Math.abs(point.y - previous.y)).toBe(1);
++          }
++        });
++      });
++
++      it('builds on grass while rejecting the selected map path', () => {
++        const placement = new TowerPlacement(COLS, ROWS, level.path);
++        const path = new Set(level.path.map((point) => `${point.x},${point.y}`));
++
++        for (let y = 0; y < ROWS; y++) {
++          for (let x = 0; x < COLS; x++) {
++            const isPath = path.has(`${x},${y}`);
++            expect(placement.getStatus({ x, y })).toBe(isPath ? 'path' : 'available');
++            expect(placement.place({ x, y })).toBe(!isPath);
++          }
++        }
++
++        expect(placement.count).toBe(COLS * ROWS - level.path.length);
++      });
++
++      it('moves along actual tile centers without cutting corners', () => {
++        const points = level.path.map(({ x, y }) => ({
++          x: (x + 0.5) * TILE,
++          y: (y + 0.5) * TILE,
++        }));
++        const follower = new PathFollower(points, TILE);
++
++        for (let index = 1; index < points.length; index++) {
++          follower.update(0.5);
++          expect(follower.position).toEqual({
++            x: (points[index - 1].x + points[index].x) / 2,
++            y: (points[index - 1].y + points[index].y) / 2,
++          });
++          follower.update(0.5);
++          expect(follower.position).toEqual(points[index]);
++          expect(follower.finished).toBe(index === points.length - 1);
++        }
++
++        expect(follower.distanceTraveled).toBe((points.length - 1) * TILE);
++      });
++    });
++  }
++});
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+new file mode 100644
+--- /dev/null
++++ b/docs/roadmap.md
+@@ -0,0 +1,57 @@
++# The Last Beacon expansion
++
++The requested direction is a fantasy tower defense game about protecting a
++fortress, with more maps, story, enemy types, tower choices, and stronger visuals.
++Implementation stays one reviewable milestone at a time.
++
++## M11: campaign maps and story
++
++- Three chapters: Border Watch, Whispering Grove, and Dawn Keep.
++- Keep the original map as chapter one. All chapters retain the 12x8 grid,
++  64px tiles, 960x640 canvas, and orthogonal path movement.
++- Distinct map palettes and a procedural beacon gate at the exit.
++- A story/level menu on first launch and from the sidebar outside active waves.
++  All chapters are available for practice; selecting PLAY starts that map fresh.
++- NEXT LEVEL after winning chapters one/two advances manually. Chapter three
++  closes the story. Restart replays the current chapter.
++- Preserve combat constants, 10 starting lives, and manually started 5/8/12 waves
++  on every map. No campaign score, unlock requirements, or saved progress yet.
++- Validate every map's bounds, continuity, placement, and movement; manually
++  verify selection, next chapter, Restart, input blocking, and resource cleanup.
++
++This milestone establishes the data and navigation needed by the next features.
++Its code is implemented; automated/browser acceptance is pending as recorded in
++the main README.
++
++## M12: enemy variety and wave composition
++
++Next proposed implementation:
++
++- Keep the existing enemy as the baseline; add a fast, fragile runner and a slow,
++  tougher guard with distinct silhouettes and readable HP bars.
++- Describe wave composition in data and introduce the variants gradually across
++  chapters, preserving manual wave starts and exact spawn accounting.
++- Review speed/HP values and play through each chapter before accepting balance.
++- Preserve path-progress targeting, live-target projectile ownership, one lost
++  life per escape, and immediate defeat at zero lives.
++
++## M13: tower choices
++
++- Keep Basic Tower unchanged as a reference.
++- Add contrasting options such as a short-range rapid tower and a long-range,
++  slower tower; review range/cadence/damage tradeoffs against M12 enemies.
++- Extend selection, preview, inspection, and help to display each tower's stats.
++- Introduce special mechanics such as splash or slowing only as an explicitly
++  reviewed change, with tests for target ownership and effect rules.
++
++## M14: graphics and gameplay polish
++
++- Give enemies and towers recognizable pixel silhouettes, beyond palette swaps.
++- Add terrain details, stronger beacon/fortress art, shadows, and restrained
++  animation while keeping paths, HP bars, previews, and projectiles readable.
++- Playtest wave composition and tower tradeoffs across all maps.
++- Check production rendering, scaling, repeated Restart, audio cleanup, and the
++  browser console. Keep FPS/development labels limited to development.
++
++Economy, upgrades, selling, backend, and multiplayer are not introduced by this
++roadmap. Further business-rule or dependency changes remain separate review items.

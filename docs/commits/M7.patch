@@ -1,0 +1,346 @@
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# Mini Tower Defense — Milestone 6
++# Mini Tower Defense — Milestone 7
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -89,6 +89,20 @@
+ enemy does not clear shots aimed at other enemies. Health bars show each enemy's
+ remaining HP.
+ 
++M7 adds visual feedback without changing combat:
++
++- A tower's muzzle flashes for 100ms when it actually fires.
++- A surviving enemy flashes white for 120ms when its HP decreases. Multiple hits
++  in one frame share one flash; lethal hits show a pixel burst instead.
++- A killed enemy leaves a small pixel burst that fades over 180ms. Escaped enemies
++  and enemies cleared at match end do not produce death bursts.
++- Each actual lost life flashes the exit tile for 240ms and pulses the LIVES text
++  red for 400ms, then restores it. Closely grouped escapes restart the warning.
++
++These effects never apply damage or delay enemy removal. Effects already running
++may finish after the result appears; no new shots or enemies are created. Restart
++clears the scene's display objects and tweens, including all active effects.
++
+ Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
+ and starting lives are in `src/config/waveConfig.ts`.
+ 
+@@ -117,8 +131,23 @@
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 6 verification status
++### Milestone 7 verification status
+ 
++The approved M7 scope is muzzle, hit, kill, and escape feedback. Implementation
++changes only `Tower.ts`, `Enemy.ts`, `GameScene.ts`, and this README. Effects use
++Phaser's existing Graphics/Tween support; no dependencies or system logic changed.
++
++- `npm run test` and `npm run build` were attempted after M7 implementation. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. M7 test/build success is not yet confirmed.
++- Source review checked actual-shot/HP/life triggers, entity removal, layering,
++  and tween lifecycle. Phaser's scene TweenManager cancels its tweens on shutdown;
++  enemy removal also cancels the enemy's hit flash before destroying its sprite.
++- Browser verification of visual timing, edge towers, result transitions, and
++  Restart during active effects is pending. Use the acceptance checklist below.
++
++### Milestone 6 verification status (previously recorded)
++
+ M6 adds tower inspection and path guides. Range and combat stats use the existing
+ combat constants. Build mode keeps its placement behavior, including rejection of
+ occupied tiles. Escape after a result preserves the locked button and match text.
+@@ -184,6 +213,14 @@
+       remain visible above the markings.
+ - [ ] Verify no enemies appear before Start Wave.
+ - [ ] Watch several enemies move simultaneously with individual HP bars.
++- [ ] Verify muzzle flashes happen only when a shot is fired, with none while
++      idle or cooling down. Check edge/corner towers do not flash over the sidebar.
++- [ ] Watch surviving enemies flash on actual damage while HP bars stay readable.
++      Expired projectiles must not flash or damage a replacement enemy.
++- [ ] Check one pixel burst per kill at the enemy's last position, including
++      multiple kills in one frame; escapes must not show a death burst.
++- [ ] Start without towers: each lost life must trigger the exit/LIVES warning,
++      then restore the normal LIVES appearance without changing other HUD text.
+ - [ ] Check that towers prioritize enemies further along the path when in range.
+ - [ ] Verify wave counts are exactly 5, 8, and 12, with one-second spacing.
+ - [ ] Verify the next wave waits until the current wave clears and you click Start.
+@@ -194,6 +231,10 @@
+ - [ ] Finish a match while inspecting a tower; its range must disappear. Press
+       Esc after the result and confirm BUILD LOCKED and match text stay intact.
+ - [ ] Restart during play and after each outcome; confirm full state reset.
++- [ ] Restart repeatedly while muzzle/hit/death/escape effects are active. Confirm
++      no old flashes, bursts, or delayed color changes appear in the new match.
++- [ ] After the result, allow current effects to finish; confirm no new shots,
++      damage, spawns, or changes to lives/kills occur.
+ - [ ] After Restart, confirm BASIC TOWER and START WAVE 1 are available and
+       there is no range preview, tower inspection, or previous result panel.
+ - [ ] Repeat in production preview; confirm no FPS/development label.
+@@ -217,11 +258,14 @@
+ M6 adds inspection of built towers and path entry/exit/turn guides. The small
+ `src/scenes/drawPathGuides.ts` renderer keeps static ground markings separate from
+ scene input and combat orchestration; scene shutdown owns its display objects.
++M7 adds short muzzle/hit flashes, pixel death bursts, and exit/lives warnings.
++Visual triggers follow existing combat results, while entity removal and match
++timing remain immediate. Scene-owned tweens handle animation and Restart cleanup.
+ Economy, upgrades, selling, and multiple enemy types remain out of scope.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 and M6 build verification is pending as described above.
++M5, M6, and M7 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/src/entities/Enemy.ts b/src/entities/Enemy.ts
+--- a/src/entities/Enemy.ts
++++ b/src/entities/Enemy.ts
+@@ -8,9 +8,14 @@
+   readonly target: CombatTarget;
+   private readonly sprite: Phaser.GameObjects.Container;
+   private readonly healthBar: Phaser.GameObjects.Rectangle;
++  private readonly hitFlash: Phaser.GameObjects.Rectangle;
+   private readonly follower: PathFollower;
++  private displayedHealth = ENEMY_MAX_HEALTH;
+ 
+-  constructor(scene: Phaser.Scene, path: Point[]) {
++  constructor(
++    private readonly scene: Phaser.Scene,
++    path: Point[],
++  ) {
+     this.follower = new PathFollower(path, ENEMY_SPEED);
+     const follower = this.follower;
+     this.target = {
+@@ -25,6 +30,7 @@
+       .rectangle(0, 0, 26, 26, 0x9b5de5)
+       .setStrokeStyle(3, 0x352044);
+     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
++    this.hitFlash = scene.add.rectangle(0, 0, 26, 26, 0xffffff).setAlpha(0);
+     const healthBackground = scene.add.rectangle(0, -23, 30, 5, 0x633545);
+     this.healthBar = scene.add
+       .rectangle(-15, -23, 30, 5, 0x91ff9e)
+@@ -34,6 +40,7 @@
+       .container(path[0].x, path[0].y, [
+         body,
+         eyes,
++        this.hitFlash,
+         healthBackground,
+         this.healthBar,
+       ])
+@@ -46,9 +53,44 @@
+   }
+ 
+   refreshHealthBar(): void {
++    if (this.target.health < this.displayedHealth) {
++      this.scene.tweens.killTweensOf(this.hitFlash);
++      this.hitFlash.setAlpha(0.75);
++      this.scene.tweens.add({
++        targets: this.hitFlash,
++        alpha: 0,
++        duration: 120,
++      });
++    }
++
++    this.displayedHealth = this.target.health;
+     this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
+   }
+ 
++  showDeathEffect(): void {
++    const burst = this.scene.add
++      .graphics({ x: this.sprite.x, y: this.sprite.y })
++      .setDepth(4);
++
++    burst
++      .fillStyle(0xc99aff)
++      .fillRect(-10, -10, 6, 6)
++      .fillRect(4, -10, 6, 6)
++      .fillRect(-10, 4, 6, 6)
++      .fillRect(4, 4, 6, 6)
++      .fillStyle(0xffdc73)
++      .fillRect(-2, -2, 4, 4);
++
++    this.scene.tweens.add({
++      targets: burst,
++      alpha: 0,
++      scaleX: 1.8,
++      scaleY: 1.8,
++      duration: 180,
++      onComplete: () => burst.destroy(),
++    });
++  }
++
+   get finished(): boolean {
+     return this.follower.finished;
+   }
+@@ -60,6 +102,7 @@
+   destroy(): void {
+     // In-flight shots keep this target reference and expire after its removal.
+     this.target.health = 0;
++    this.scene.tweens.killTweensOf(this.hitFlash);
+     this.sprite.destroy();
+   }
+ }
+diff --git a/src/entities/Tower.ts b/src/entities/Tower.ts
+--- a/src/entities/Tower.ts
++++ b/src/entities/Tower.ts
+@@ -6,6 +6,7 @@
+ 
+ export class Tower extends Phaser.GameObjects.Container {
+   private readonly turret: Phaser.GameObjects.Container;
++  private readonly muzzleFlash: Phaser.GameObjects.Rectangle;
+   private readonly attack = new TowerAttack(TOWER_RANGE, TOWER_FIRE_INTERVAL);
+ 
+   constructor(scene: Phaser.Scene, tile: Point) {
+@@ -21,7 +22,11 @@
+       .rectangle(0, -17, 10, 24, 0xb9e8f5)
+       .setStrokeStyle(2, 0x236b88);
+ 
+-    this.turret = scene.add.container(0, 0, [head, barrel]);
++    this.muzzleFlash = scene.add
++      .rectangle(0, -27, 12, 6, 0xffedb5)
++      .setAlpha(0);
++
++    this.turret = scene.add.container(0, 0, [head, barrel, this.muzzleFlash]);
+     this.add([base, this.turret]);
+     this.setDepth(1);
+     scene.add.existing(this);
+@@ -44,6 +49,18 @@
+       );
+     }
+ 
+-    return this.attack.update(deltaMs / 1000, this, target) ? target : null;
++    if (!this.attack.update(deltaMs / 1000, this, target)) {
++      return null;
++    }
++
++    this.scene.tweens.killTweensOf(this.muzzleFlash);
++    this.muzzleFlash.setAlpha(1);
++    this.scene.tweens.add({
++      targets: this.muzzleFlash,
++      alpha: 0,
++      duration: 100,
++    });
++
++    return target;
+   }
+ }
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -19,7 +19,9 @@
+   private towers: Tower[] = [];
+   private projectiles: Projectile[] = [];
+   private waves!: WaveSystem;
++  private livesText!: Phaser.GameObjects.Text;
+   private matchText!: Phaser.GameObjects.Text;
++  private exitFlash!: Phaser.GameObjects.Rectangle;
+   private phaseText!: Phaser.GameObjects.Text;
+   private waveButton!: Phaser.GameObjects.Text;
+   private fpsText?: Phaser.GameObjects.Text;
+@@ -96,6 +98,18 @@
+     graphics
+       .fillStyle(0x202d39)
+       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
++
++    const exit = PATH_TILES[PATH_TILES.length - 1];
++    this.exitFlash = this.add
++      .rectangle(
++        (exit.x + 0.5) * TILE,
++        (exit.y + 0.5) * TILE,
++        TILE - 8,
++        TILE - 8,
++        0xff7373,
++      )
++      .setDepth(0.6)
++      .setAlpha(0);
+   }
+ 
+   private createHud(): void {
+@@ -104,15 +118,20 @@
+       fontSize: '17px',
+       color: '#f5e6ae',
+     });
+-    this.add.text(786, 68, 'MILESTONE 6', {
++    this.add.text(786, 68, 'MILESTONE 7', {
+       fontFamily: 'monospace',
+       fontSize: '14px',
+       color: '#b4d9bc',
+     });
+-    this.matchText = this.add.text(786, 112, '', {
++    this.livesText = this.add.text(786, 112, '', {
+       fontFamily: 'monospace',
+       fontSize: '13px',
+       color: '#ffffff',
++    });
++    this.matchText = this.add.text(786, 132, '', {
++      fontFamily: 'monospace',
++      fontSize: '13px',
++      color: '#ffffff',
+       lineSpacing: 5,
+     });
+ 
+@@ -401,6 +420,28 @@
+     this.projectiles = [];
+   }
+ 
++  private flashEscape(): void {
++    // Restart the visual warning instead of stacking it during a slow frame.
++    this.tweens.killTweensOf(this.exitFlash);
++    this.exitFlash.setAlpha(0.65);
++    this.tweens.add({
++      targets: this.exitFlash,
++      alpha: 0,
++      duration: 240,
++    });
++
++    this.tweens.killTweensOf(this.livesText);
++    this.livesText.setColor('#ff7373').setAlpha(1);
++    this.tweens.add({
++      targets: this.livesText,
++      alpha: 0.35,
++      duration: 100,
++      yoyo: true,
++      repeat: 1,
++      onComplete: () => this.livesText.setColor('#ffffff'),
++    });
++  }
++
+   private finishMatch(): void {
+     this.clearProjectiles();
+ 
+@@ -462,8 +503,9 @@
+     const waves = this.waves;
+     const ready = waves.state === 'ready';
+ 
++    this.livesText.setText(`LIVES ${waves.lives}`);
+     this.matchText.setText(
+-      `LIVES ${waves.lives}\nWAVE ${waves.waveNumber}/${waves.totalWaves}\nALIVE ${waves.active}\nKILLS ${waves.kills}`,
++      `WAVE ${waves.waveNumber}/${waves.totalWaves}\nALIVE ${waves.active}\nKILLS ${waves.kills}`,
+     );
+     this.waveButton
+       .setText(
+@@ -511,7 +553,13 @@
+     // Resolve escaped enemies before selecting targets or applying damage.
+     this.enemies = this.enemies.filter((enemy) => {
+       if (enemy.finished) {
++        const livesBefore = this.waves.lives;
+         this.waves.resolveEnemy('escaped');
++
++        if (this.waves.lives < livesBefore) {
++          this.flashEscape();
++        }
++
+         enemy.destroy();
+         return false;
+       }
+@@ -542,6 +590,7 @@
+       this.enemies = this.enemies.filter((enemy) => {
+         if (enemy.dead) {
+           this.waves.resolveEnemy('killed');
++          enemy.showDeathEffect();
+           enemy.destroy();
+           return false;
+         }

@@ -1,8 +1,20 @@
-# The Last Beacon — Milestone 15
+# The Last Beacon — Milestone 17 art review
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
-All graphics are procedural pixel-style shapes.
+Enemies use hand-painted PNG atlases; terrain and towers retain procedural art.
+
+The next art direction is hand-painted 2D fantasy with a three-quarter overhead
+view. [The proposed art plan](docs/art-plan.md) covers story-linked goblins/ogres,
+towers, terrain, entrance gates and fortress art. The plan is approved and
+[M16 art review](docs/art/m16/review.html) now has generated concept/map PNGs,
+a 960x640 preview and a canonical-layout overlay. Artwork geometry still needs
+human acceptance as recorded in [the review notes](docs/art/m16/README.md).
+The user approved continuing into M17 and correcting the Goblin with atlas
+metadata. All three enemy types are now integrated; [M17 review](docs/art/m17/README.md)
+records the assets, implementation and pending local/browser acceptance.
+The latest M17 revision adds eight walk poses per direction with distance-based
+phase; compare it with the four-pose version in the [walk preview](docs/art/m17/walk-v2/review.html).
 
 ## Requirements and development
 
@@ -137,16 +149,16 @@ The result panel shows the wave reached, kills, remaining lives, and towers buil
 
 | Kind | HP | Speed | Appearance |
 | --- | --- | --- | --- |
-| Basic | 3 | 95px/s | Purple square with small horns |
-| Runner | 2 | 140px/s | Orange diamond, cape, and R |
-| Guard | 7 | 65px/s | Blue-gray shoulder armor, crest, shield, and G |
+| Basic | 3 | 95px/s | Goblin raider, purple cloth and chipped knife |
+| Runner | 2 | 140px/s | Goblin scout, orange cape and two short daggers |
+| Guard | 7 | 65px/s | Armored ogre, tusks, purple tabard and wooden shield |
 
 All kinds still cost one life on escape and add one kill on death. Guard has more
 HP, with no armor reduction or special ability. Every HP bar starts full and uses
 that kind's maximum HP. Profiles are in `src/config/enemyConfig.ts`.
 
 The ready footer previews the next wave's composition. HOW TO PLAY lists enemy
-HP/speed and markers. Runners can overtake earlier enemies; towers still prioritize
+HP/speed and art names. Runners can overtake earlier enemies; towers still prioritize
 the furthest in-range path progress, with spawn order breaking ties.
 
 | Chapter | Wave | Basic | Runner | Guard |
@@ -211,13 +223,14 @@ The exit has a stone gate, battlements, windows, and a softly pulsing beacon,
 all inside its tile below enemies and HP bars. IN/OUT markers, escape warnings,
 previews, and inspection retain their layers and visibility.
 
-Enemies have ground shadows, small feet, and distinct horn/cape/armor details.
-Walking moves only their figure by up to one pixel, with alternating feet based
-on traveled distance. The combat/root position, shadow, and HP bar do not bob;
-speed, targeting, damage, and exit timing are unchanged. Tower shadows, stone
-bases, and the Longbow string add depth without changing their aiming or stats.
+Enemies use four-direction idle/walk animations and a shared four-frame death
+sequence per kind. Per-pose atlas rectangles and a shared ground pivot keep the
+figure upright through turns. Shadows, HP bars and combat roots stay independent
+of animation. Missing/incomplete art uses the previous procedural figures.
+Tower shadows, stone bases and the Longbow string retain their existing behavior.
 
-Terrain is drawn once per scene. Walking adds no timers or tweens. The beacon has
+Terrain is drawn once per scene. Phaser drives sprite animation without custom
+per-enemy timers or tweens. The beacon has
 one ambient alpha tween, which can continue behind menus/results; Phaser clears
 scene tweens and objects on Restart/chapter changes. Existing combat flashes and
 audio behavior stay unchanged.
@@ -318,6 +331,47 @@ npm run preview
 ```
 
 Open the preview URL to test production. FPS and the development label are hidden.
+
+### Milestone 17 verification status
+
+Goblin, Scout and Ogre now use eight walk poses per direction, with stride phase
+selected from distance traveled. The user requested finer leg motion after the
+first four-pose version. See the [v1/v2 preview](docs/art/m17/walk-v2/review.html)
+at 100% zoom for slow motion, single stepping and direction changes.
+
+- Direct data checks cover 116 new poses with non-overlapping padded crops and
+  consistent registration. Ogre retains its four verified original death frames
+  because new death silhouettes overlap. No source PNG pixels were rewritten.
+- Four runtime PNGs total 9,142,407 bytes (~8.72 MiB), above the initial suggested
+  8MB art budget. Download, browser memory and FPS still need human review.
+- Vite resolves the existing source PNG URLs; textures/animation keys are reused
+  through Restart. Missing art falls back to procedural figures. Corpse sprites
+  render below living enemies and do not delay kill/wave resolution.
+- Story/help names match the art. Gameplay profiles, paths and wave lists remain
+  unchanged; no dependency or global renderer setting was added.
+- `npm run test` and `npm run build` were attempted, but both stop before their
+  scripts with Node `EPERM: lstat C:\Users\Admin`. Automated/browser acceptance
+  is pending as detailed in the M17 notes; data checks are not a Vitest pass.
+
+### Milestone 16 art review status
+
+The approved fantasy art direction now has a three-enemy/three-tower/three-biome
+concept board and a painted Border Watch map, generated with imagegen built-in.
+Both selected PNGs were copied into `docs/art/m16` and visually inspected there.
+
+- `review.html` shows a 960x640 UI frame, the map at 768x512, six small concept
+  crops and a toggleable overlay from the 19-tile source path and six valid tower
+  footprints. It uses local images, CSS and SVG, with no scripts or dependencies.
+- Native PNGs are 1536x1024. They are art concepts, not production sprites/tiles;
+  alpha, animation, pivots and runtime integration remain for later milestones.
+- Three mockup attempts did not reproduce exact geometry. Image generation for
+  that issue has stopped; the known discrepancies and next choices are in the
+  M16 notes. The user approved the art direction and continuing into M17;
+  the concept map is not treated as a geometrically correct runtime tilemap.
+- The user changed the imagegen hook rule and reported hook tests complete.
+  The agent did not edit policy/hooks. M16 itself did not modify runtime code.
+- The two PNGs were inspected; the HTML page still needs browser verification at
+  100% zoom. Test/build results are recorded in the M16 notes after the final checks.
 
 ### Milestone 15 verification status
 
@@ -601,7 +655,7 @@ sharpness on other displays still need manual verification.
       layout works as before. Check unchanged Basic HP/speed and tower stats.
 - [ ] In Whispering Grove, compare the ready footer with the table above. Watch
       Runner appear in wave 1 and Guard in wave 2; each still costs one life.
-- [ ] In Dawn Keep, check all three silhouettes/markers. Verify Runner needs two
+- [ ] In Dawn Keep, check purple Goblin, orange Scout and armored Ogre. Verify Runner needs two
       basic hits and Guard seven, with a full HP bar initially and visible damage
       feedback from the first hit. Guard must not have damage reduction.
 - [ ] Check overtaking Runners become priority when further along and in range;
@@ -752,6 +806,9 @@ ambient beacon animation. Combat and level/wave definitions are unchanged; the
 playtest sheet records pending balance and browser verification.
 M15 adds shaped homing projectiles, actual-HP damage numbers, and a manual-wave
 banner. All are presentation; combat algorithms and match rules remain unchanged.
+M17 adds illustrated enemy atlases, directional animation, ground-pivot metadata,
+independent death visuals and matching story/help names. Review remains pending
+as recorded above; M18 tower art has not started.
 See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's

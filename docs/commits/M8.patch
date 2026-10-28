@@ -1,0 +1,395 @@
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# Mini Tower Defense — Milestone 7
++# Mini Tower Defense — Milestone 8
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -28,7 +28,15 @@
+ 5. After all enemies in a wave are resolved, place more towers or start the
+    next wave manually.
+ 6. Click **RESTART** at any time to reset the entire match.
++7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
++   after the result. Close it with **H**, **Esc**, or the close button. During a
++   wave, the help button is dimmed and reads **HELP AFTER WAVE**.
+ 
++Help explains the objective, placement colors, tower inspection, manual waves,
++lives, Restart, and current tower stats. Opening it closes build/inspection
++selection and blocks map clicks. Build and Start Wave stay disabled until help
++closes; **RESTART** remains available in the sidebar. Help never pauses a wave.
++
+ Outside build mode, left-click a built tower's tile to inspect its range and
+ combat stats. The blue range circle stays visible as you move the pointer and is
+ clipped to the map. Click another tower to switch, or click a map tile without a
+@@ -131,8 +139,22 @@
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 7 verification status
++### Milestone 8 verification status
+ 
++The approved M8 scope is in-game instructions. The panel uses existing game
++constants and Phaser display objects, with no dependencies or game-rule changes.
++`createHelpPanel.ts` renders the panel; `GameScene.ts` owns availability and input.
++
++- `npm run test` and `npm run build` were attempted after M8 implementation. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. M8 test/build success is not yet confirmed.
++- Source review covered wave gating, map-click blocking, close-button event
++  propagation, Restart availability, and H/Esc listener cleanup.
++- Browser checks are pending: keyboard/button controls, text fit after resizing,
++  click blocking, and repeated Restart with help open. Use the checklist below.
++
++### Milestone 7 verification status (previously recorded)
++
+ The approved M7 scope is muzzle, hit, kill, and escape feedback. Implementation
+ changes only `Tower.ts`, `Enemy.ts`, `GameScene.ts`, and this README. Effects use
+ Phaser's existing Graphics/Tween support; no dependencies or system logic changed.
+@@ -195,6 +217,17 @@
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Before wave 1, open help using HOW TO PLAY and H. Confirm instructions and
++      tower stats match the game and fit at the normal size and after resizing.
++- [ ] Close with H, Esc, and CLOSE. Holding H should not repeatedly toggle help.
++- [ ] Open help while building/inspecting; selection must clear. Map clicks and
++      clicks on CLOSE must not place/select a tower or start a wave.
++- [ ] During a wave, confirm HELP AFTER WAVE is disabled and H does not open help;
++      placement, movement, combat, and spawn timing must continue normally.
++- [ ] Open help between waves and after victory/defeat. Close it and confirm
++      correct build/Start Wave availability, including BUILD LOCKED after a result.
++- [ ] Click RESTART with help open, then repeat H/Esc several times. Confirm the
++      panel starts closed and one key press causes only one toggle after restart.
+ - [ ] Confirm the map dimensions, orthogonal path, sidebar, and crisp graphics.
+ - [ ] Check placement previews, occupied/path rejection, Esc, and resizing.
+ - [ ] Check the 128px range circle on grass, path, and occupied tiles; it must
+@@ -261,11 +294,13 @@
+ M7 adds short muzzle/hit flashes, pixel death bursts, and exit/lives warnings.
+ Visual triggers follow existing combat results, while entity removal and match
+ timing remain immediate. Scene-owned tweens handle animation and Restart cleanup.
++M8 adds a HOW TO PLAY panel and H/Esc controls, available outside active waves.
++The panel covers the map while Restart remains accessible in the sidebar.
+ Economy, upgrades, selling, and multiple enemy types remain out of scope.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5, M6, and M7 build verification is pending as described above.
++M5 through M8 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -12,6 +12,7 @@
+ import { Tower } from '../entities/Tower';
+ import { TowerPlacement } from '../systems/TowerPlacement';
+ import { WaveSystem } from '../systems/WaveSystem';
++import { createHelpPanel } from './createHelpPanel';
+ import { drawPathGuides } from './drawPathGuides';
+ 
+ export class GameScene extends Phaser.Scene {
+@@ -24,6 +25,8 @@
+   private exitFlash!: Phaser.GameObjects.Rectangle;
+   private phaseText!: Phaser.GameObjects.Text;
+   private waveButton!: Phaser.GameObjects.Text;
++  private helpButton!: Phaser.GameObjects.Text;
++  private helpPanel!: Phaser.GameObjects.Container;
+   private fpsText?: Phaser.GameObjects.Text;
+   private placement!: TowerPlacement;
+   private placementPreview!: Phaser.GameObjects.Graphics;
+@@ -51,18 +54,21 @@
+     this.createHud();
+     this.createPlacementControls();
+     this.createMatchControls();
++    this.createHelpControls();
+     this.refreshHud();
+ 
+     this.input.on('pointermove', this.updatePlacementPreview, this);
+     this.input.on('pointerdown', this.handleMapPointerDown, this);
+     this.input.on('gameout', this.hidePlacementPreview, this);
+     this.input.keyboard?.on('keydown-ESC', this.cancelSelection, this);
++    this.input.keyboard?.on('keydown-H', this.toggleHelp, this);
+ 
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+       this.input.off('pointermove', this.updatePlacementPreview, this);
+       this.input.off('pointerdown', this.handleMapPointerDown, this);
+       this.input.off('gameout', this.hidePlacementPreview, this);
+       this.input.keyboard?.off('keydown-ESC', this.cancelSelection, this);
++      this.input.keyboard?.off('keydown-H', this.toggleHelp, this);
+     });
+   }
+ 
+@@ -118,7 +124,7 @@
+       fontSize: '17px',
+       color: '#f5e6ae',
+     });
+-    this.add.text(786, 68, 'MILESTONE 7', {
++    this.add.text(786, 68, 'MILESTONE 8', {
+       fontFamily: 'monospace',
+       fontSize: '14px',
+       color: '#b4d9bc',
+@@ -183,7 +189,7 @@
+       .setInteractive({ useHandCursor: true });
+ 
+     this.towerButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+-      if (!pointer.leftButtonDown() || this.waves.finished) {
++      if (!pointer.leftButtonDown() || this.waves.finished || this.helpPanel.visible) {
+         return;
+       }
+ 
+@@ -277,6 +283,11 @@
+   }
+ 
+   private cancelSelection(): void {
++    if (this.helpPanel.visible) {
++      this.toggleHelp();
++      return;
++    }
++
+     this.clearTowerInspection();
+ 
+     if (!this.waves.finished) {
+@@ -294,7 +305,7 @@
+   }
+ 
+   private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
+-    if (this.waves.finished || !pointer.leftButtonDown()) {
++    if (this.waves.finished || this.helpPanel.visible || !pointer.leftButtonDown()) {
+       return;
+     }
+ 
+@@ -371,7 +382,7 @@
+       .setInteractive({ useHandCursor: true });
+ 
+     this.waveButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+-      if (pointer.leftButtonDown()) {
++      if (pointer.leftButtonDown() && !this.helpPanel.visible) {
+         this.waves.startWave();
+         this.refreshHud();
+       }
+@@ -401,6 +412,46 @@
+       });
+   }
+ 
++  private createHelpControls(): void {
++    this.helpPanel = createHelpPanel(this, () => this.toggleHelp());
++    this.helpButton = this.add
++      .text(786, 540, 'HOW TO PLAY', {
++        fontFamily: 'monospace',
++        fontSize: '13px',
++        color: '#ffffff',
++        backgroundColor: '#33485c',
++        fixedWidth: 148,
++        align: 'center',
++        padding: { x: 8, y: 10 },
++      })
++      .setInteractive({ useHandCursor: true });
++
++    this.helpButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
++      if (pointer.leftButtonDown()) {
++        this.toggleHelp();
++      }
++    });
++
++    this.add.text(786, 584, 'Help: H / Esc closes', {
++      fontFamily: 'monospace',
++      fontSize: '12px',
++      color: '#aab7bd',
++    });
++  }
++
++  private toggleHelp(event?: KeyboardEvent): void {
++    if (event?.repeat || this.waves.state === 'running') {
++      return;
++    }
++
++    if (!this.helpPanel.visible) {
++      this.cancelSelection();
++    }
++
++    this.helpPanel.setVisible(!this.helpPanel.visible);
++    this.refreshHud();
++  }
++
+   private spawnEnemy(ageSeconds: number): void {
+     const path = PATH_TILES.map((point) => ({
+       x: (point.x + 0.5) * TILE,
+@@ -502,6 +553,7 @@
+   private refreshHud(): void {
+     const waves = this.waves;
+     const ready = waves.state === 'ready';
++    const waveAvailable = ready && !this.helpPanel.visible;
+ 
+     this.livesText.setText(`LIVES ${waves.lives}`);
+     this.matchText.setText(
+@@ -510,16 +562,32 @@
+     this.waveButton
+       .setText(
+         ready
+-          ? `START WAVE ${waves.waveNumber + 1}`
++          ? this.helpPanel.visible
++            ? 'CLOSE HELP FIRST'
++            : `START WAVE ${waves.waveNumber + 1}`
+           : waves.state === 'running'
+             ? 'WAVE RUNNING'
+             : 'MATCH OVER',
+       )
+-      .setBackgroundColor(ready ? '#236b88' : '#33485c')
+-      .setAlpha(ready ? 1 : 0.55);
++      .setBackgroundColor(waveAvailable ? '#236b88' : '#33485c')
++      .setAlpha(waveAvailable ? 1 : 0.55);
+ 
+-    this.waveButton.input!.enabled = ready;
++    this.waveButton.input!.enabled = waveAvailable;
++    this.towerButton.input!.enabled = !waves.finished && !this.helpPanel.visible;
++    this.towerButton.setAlpha(waves.finished || this.helpPanel.visible ? 0.55 : 1);
+ 
++    const helpAvailable = waves.state !== 'running';
++    this.helpButton
++      .setText(
++        !helpAvailable
++          ? 'HELP AFTER WAVE'
++          : this.helpPanel.visible
++            ? 'CLOSE HELP'
++            : 'HOW TO PLAY',
++      )
++      .setAlpha(helpAvailable ? 1 : 0.55);
++    this.helpButton.input!.enabled = helpAvailable;
++
+     if (ready) {
+       this.phaseText.setText(
+         `Ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
+diff --git a/src/scenes/createHelpPanel.ts b/src/scenes/createHelpPanel.ts
+new file mode 100644
+--- /dev/null
++++ b/src/scenes/createHelpPanel.ts
+@@ -0,0 +1,126 @@
++import type Phaser from 'phaser';
++import {
++  TOWER_DAMAGE,
++  TOWER_FIRE_INTERVAL,
++  TOWER_RANGE,
++} from '../config/combatConfig';
++import { COLS, ROWS, TILE } from '../config/gameConfig';
++import { STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
++
++export function createHelpPanel(
++  scene: Phaser.Scene,
++  onClose: () => void,
++): Phaser.GameObjects.Container {
++  const backdrop = scene.add
++    .rectangle(0, 0, COLS * TILE, ROWS * TILE, 0x0b1420, 0.8)
++    .setInteractive();
++
++  backdrop.on(
++    'pointerdown',
++    (
++      _pointer: Phaser.Input.Pointer,
++      _x: number,
++      _y: number,
++      event: Phaser.Types.Input.EventData,
++    ) => {
++      event.stopPropagation();
++    },
++  );
++
++  const panel = scene.add
++    .rectangle(0, 0, 704, 456, 0x202d39)
++    .setStrokeStyle(2, 0x7eddf5);
++  const title = scene.add
++    .text(0, -200, 'HOW TO PLAY', {
++      fontFamily: 'monospace',
++      fontSize: '24px',
++      color: '#f5e6ae',
++    })
++    .setOrigin(0.5);
++  const objective = scene.add.text(
++    -320,
++    -162,
++    `Keep at least one of your ${STARTING_LIVES} lives through all ${WAVE_COUNTS.length} waves.`,
++    {
++      fontFamily: 'monospace',
++      fontSize: '15px',
++      color: '#b4d9bc',
++      wordWrap: { width: 640 },
++    },
++  );
++  const instructions = scene.add.text(
++    -320,
++    -116,
++    [
++      'BUILD    Choose BASIC TOWER, then click empty grass.',
++      '         Green = valid. Red = path or occupied.',
++      'INSPECT  Cancel building, then click a placed tower.',
++      `WAVES    Start each wave manually: ${WAVE_COUNTS.join(' / ')} enemies.`,
++      '         Wait until every enemy is defeated or has escaped.',
++      'LIVES    Each escape costs 1 life; kills increase KILLS.',
++      'RESTART  Resets the match, including all towers.',
++    ].join('\n'),
++    {
++      fontFamily: 'monospace',
++      fontSize: '15px',
++      color: '#ffffff',
++      lineSpacing: 9,
++      wordWrap: { width: 640 },
++    },
++  );
++  const stats = scene.add.text(
++    -320,
++    102,
++    `Basic tower: ${TOWER_RANGE}px range / ${TOWER_FIRE_INTERVAL}s per shot / ${TOWER_DAMAGE} damage`,
++    { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
++  );
++  const hint = scene.add
++    .text(0, 140, 'Help is available between waves and after the match.', {
++      fontFamily: 'monospace',
++      fontSize: '13px',
++      color: '#aab7bd',
++    })
++    .setOrigin(0.5);
++  const closeButton = scene.add
++    .text(0, 190, 'CLOSE (H / ESC)', {
++      fontFamily: 'monospace',
++      fontSize: '14px',
++      color: '#ffffff',
++      backgroundColor: '#236b88',
++      fixedWidth: 220,
++      align: 'center',
++      padding: { x: 8, y: 10 },
++    })
++    .setOrigin(0.5)
++    .setInteractive({ useHandCursor: true });
++
++  closeButton.on(
++    'pointerdown',
++    (
++      pointer: Phaser.Input.Pointer,
++      _x: number,
++      _y: number,
++      event: Phaser.Types.Input.EventData,
++    ) => {
++      event.stopPropagation();
++
++      if (pointer.leftButtonDown()) {
++        onClose();
++      }
++    },
++  );
++
++  return scene.add
++    .container((COLS * TILE) / 2, (ROWS * TILE) / 2, [
++      backdrop,
++      panel,
++      title,
++      objective,
++      instructions,
++      stats,
++      hint,
++      closeButton,
++    ])
++    .setDepth(30)
++    .setVisible(false);
++}

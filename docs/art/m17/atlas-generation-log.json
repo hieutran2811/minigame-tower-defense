@@ -1,0 +1,71 @@
+{
+  "mode": "built-in",
+  "goblinMetadataApprovedByUser": true,
+  "goblinPngEdited": false,
+  "goblinProof": {
+    "sha256": "84f4df27d7b19f6b25680f2fc6d859d406818dc663cbce1f016deb9f823edc45",
+    "poses": 24,
+    "geometryValid": true,
+    "cropsOverlap": false
+  },
+  "savedNewPngs": true,
+  "viewedInWorkspace": true,
+  "copiedSourceBytesVerified": true,
+  "calls": [
+    {
+      "id": "scout-original",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: stylized-concept. Asset: production 2D tower-defense Goblin SCOUT sprite atlas, 24 distinct poses on a genuinely transparent RGBA background.\nReference image: the recent purple goblin sheet is a STYLE reference only. Match its hand-painted leather, moss-green skin, steel, light direction, soft dark contour, readable detail and three-quarter overhead camera. The NEW character is the scout: slender green goblin, long springy legs, brown leather cap, short ragged OCHRE-ORANGE cape, light brown leather straps and boots, TWO small steel daggers. No purple hood or purple tunic. He must read as a faster, lighter enemy than the purple raider. The orange cape is the main recognition cue.\nCanvas 1536x1024 landscape. Place exactly SIX columns and FOUR rows, one complete isolated pose in each of 24 slots. Do not paint grid lines. Keep generous genuinely transparent gaps between actors. Each standing actor is about 175px head-to-feet, with uniform scale across rows and directions. Keep whole ears, cape, daggers, hands and boots within each slot, with generous padding on every side. Do not let neighboring poses touch. The game will use per-pose atlas rectangles, so clear separation and complete silhouettes matter more than filling slots.\nCamera: fixed three-quarter overhead, about 35 degrees down; body stays upright on screen. Same warm upper-left light in every pose, even back views. No horizon, ground, scenery or perspective tile.\nEXACT ordering, zero-based columns:\nRow 0 NORTH (back visible): column 0 idle, 1 walk A left step, 2 walk B passing, 3 walk C right step, 4 walk D passing; column 5 death frame 1, front/SOUTH view, staggering.\nRow 1 EAST (right-facing): column 0 idle, 1 walk A, 2 walk B, 3 walk C, 4 walk D; column 5 death frame 2, same front view, knees buckle.\nRow 2 SOUTH (face visible): column 0 idle, 1 walk A, 2 walk B, 3 walk C, 4 walk D; column 5 death frame 3, same front view, falling sideways.\nRow 3 WEST (left-facing): column 0 idle, 1 walk A, 2 walk B, 3 walk C, 4 walk D; column 5 death frame 4, collapsed and still.\nWalk A-B-C-D should loop with opposite arm/leg motion, a light fast forward lean and small orange cape follow-through. Maintain the same camera, character proportions and apparent ground plane. Rear views must show the back of the cap and cape, not a sideways face. The two blades remain attached to the same physical hands across turns. Death is non-graphic, with no blood/gore, around the same feet plane and in four clearly successive poses.\nTransparent background: actual alpha=0 outside the characters, clean semitransparent edges, no baked ground shadow, no color matte or glow. No parchment, painted checkerboard, colored backdrop, captions, text, numbers, labels, watermark, UI, ground ellipses or extra actors. Deliver the sprite sheet itself, not a concept poster.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-ffa33153-a788-4d18-abf4-53eb21e260cc.png",
+      "selected": false,
+      "review": "Đúng màu cam/style nhưng cần phân biệt thân hình và hai dao."
+    },
+    {
+      "id": "scout-selected",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: precise-object-edit. Edit target: the most recent ORANGE Goblin Scout 24-pose sheet. Correct ONLY the scout's distinguishing anatomy/equipment; keep the same 24 poses and order, source 1536x1024 dimensions, six-column/four-row placement, camera, true transparent alpha, orange cape, brown cap, colors, upper-left light and hand-painted style.\nThe scout must be a visibly lean, lanky runner rather than the stocky purple raider with recolored clothes. Make torso/hips/shoulders clearly narrower (about two thirds of current width), slim the limbs, use longer-looking legs and a light forward-leaning sprint posture. Keep head size expressive but reduce the broad hunched shoulders. Keep total head-to-ground height about the same and preserve clear separation between all 24 characters.\nEQUIPMENT correction: each scout carries TWO distinct short steel DAGGERS, one gripped in EACH hand, with both blades attached and identifiable wherever the view allows. Replace the large curved single raider sword with a compact straight dagger. The currently empty left hand must visibly hold its own smaller straight steel dagger pointing back/down. On north/back views show the small left-hand dagger outside the left hip and the right-hand dagger outside the right hip. Side views can occlude the far blade but must not turn its hand into an empty fist. South views should clearly show both short blades. Keep both daggers during death poses where visible, without floating/disconnected parts.\nPreserve the back/NORTH row, right/EAST row, front/SOUTH row and left/WEST row; columns 0..4 are idle and four walk poses, column 5 contains the four consecutive non-graphic death poses down the sheet. Keep an orange cape, not a purple hood. No new actors, no labels, numbers, ground, shadows, colored backdrop, painted checkerboard or guides. Return the genuinely transparent production sprite sheet itself.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-1b81a964-d27a-43ed-a01d-d392a5feac64.png",
+      "selected": true,
+      "review": "Chọn bản dáng nhẹ, áo choàng cam và hai dao."
+    },
+    {
+      "id": "ogre-original",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: stylized-concept. Asset type: production 2D tower-defense Armored OGRE animation atlas, 24 complete isolated poses on a genuinely transparent RGBA background.\nReference image: use ONLY the TOP-RIGHT OGRE from the approved concept board as the character identity, proportions, armor, materials, palette and hand-painted style reference. Ignore the board's paper, labels, goblins, towers, maps and composition. The new sheet contains ONLY that ogre in 24 poses. Match its broad gray-olive heavy body, small ears, bald forehead, blunt nose, large tusks, huge dark blue-gray iron shoulder plates and bracers, purple torn tabard with a simple pale Hollow Host symbol, thick leather straps, heavy bare clawed feet and large reinforced round wooden shield held by the LEFT arm. Right hand is a heavy empty fist. It is an ogre, not a goblin in armor.\nCanvas 1536x1024 landscape, exactly SIX columns and FOUR rows. One full pose per slot with generous transparent gaps and padding around EVERY pose. Whole body plus shield is about 210px high and no more than 220px wide in standing poses. Keep uniform proportions and scale across all rows. Never crop horns, armor spikes, tusks, fingers, toes or shield edges; never let neighboring poses touch. The engine uses per-pose atlas metadata, so exact equal-grid coordinates are less important than complete, separated silhouettes.\nCamera: fixed three-quarter OVERHEAD view, about 35 degrees down, body stays upright on screen; upper-left light remains fixed across every direction, even rear views. Skin, scuffed steel, wood grain and leather remain readable when reduced to a 45-48px body in the game. Use broad material planes and soft dark outlines rather than noisy tiny lines.\nEXACT ordering, zero-based columns:\nROW 0 NORTH / back toward viewer: c0 idle, c1 walk A left leg forward, c2 walk B passing, c3 walk C right leg forward, c4 walk D passing; c5 death 1 staggering in SOUTH/front view.\nROW 1 EAST / facing screen right: c0 idle, c1 walk A, c2 walk B, c3 walk C, c4 walk D; c5 death 2 knees buckling, same SOUTH/front view.\nROW 2 SOUTH / face toward viewer: c0 idle, c1 walk A, c2 walk B, c3 walk C, c4 walk D; c5 death 3 falling sideways, same SOUTH/front view.\nROW 3 WEST / facing screen left: c0 idle, c1 walk A, c2 walk B, c3 walk C, c4 walk D; c5 death 4 collapsed and still.\nThe shield is attached to the SAME PHYSICAL LEFT ARM throughout turns, never swapped to the other hand. In rear views left arm is viewer-left; in front views left arm is viewer-right. Respect normal occlusion in side views; the shield must not float. Four walking poses should make a clearly alternating heavy lumbering step cycle, not four identical stances. Keep the foot ground plane steady. The four death poses form a non-graphic stagger, buckle, fall, collapse sequence, with no gore or blood, and the attached shield follows the arm as the ogre falls.\nTransparent background means actual alpha=0 around characters, no painted checkerboard, no parchment, no colored backdrop, ground, contact shadow, glow, guide lines, labels, numbers, captions, watermark, extra weapons or extra characters. Deliver the actual transparent sprite sheet, not an illustrated poster.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-bc8b11b7-385d-4c96-b9a0-7160db5d80b2.png",
+      "selected": false,
+      "review": "Khiên chưa nhất quán trong ba pose hướng Tây."
+    },
+    {
+      "id": "ogre-shield-edit",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: precise-object-edit. Edit target: the most recent 24-pose ARMORED OGRE sheet. Correct ONLY the shield/arm consistency in the WEST-facing fourth row, columns 1,2,3 (zero-based). Those three poses currently put the shield on the far side/other arm. They must carry the big wooden round shield on the SAME PHYSICAL LEFT ARM as fourth-row columns 0 and 4. The WEST-facing row's LEFT ARM is the near arm, on the viewer-facing lower side; show the shield's broad round face in the near foreground, like row 3 column 0 and row 3 column 4. The empty RIGHT fist must be the far arm, partly occluded behind the torso. Do not swap arms as feet alternate. Keep alternating leg steps and a slightly swinging but consistently attached near-side shield in all four walking poses.\nDo not change any of the other 21 poses: preserve the NORTH/back row, EAST/right-facing row, SOUTH/front row, WEST idle and final walk, and all four death poses in the final column. Keep the same armor, bald tusked face, gray-olive skin, purple tabard, shield symbol, upper-left light, 1536x1024 source dimensions, six-column/four-row placement, source scale and complete padded silhouettes. No relocation of sprites. Preserve genuinely transparent alpha around characters and between limbs. No colored backdrop, paper, ground shadows, checkerboard, text, guide lines, labels or new objects. Deliver the corrected transparent sprite sheet.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-4bed6c14-ec78-4b32-afcb-a7f1154e755c.png",
+      "selected": false,
+      "review": "Đã có khiên đúng phía nhưng còn cạnh khiên cũ."
+    },
+    {
+      "id": "ogre-selected",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: precise-object-edit. Edit target: the most recent 24-pose armored ogre sheet. Fix a very specific duplicate-object artifact ONLY in the BOTTOM / WEST-facing row, columns 0,1,2,3,4. Each of those five WEST ogres currently has the correct BIG ROUND SHIELD in the near foreground on the viewer-right, PLUS an incorrect SECOND NARROW WOODEN SHIELD EDGE on the viewer-left of the chest, extending vertically down from below the chin. DELETE that obsolete narrow far-side shield/wooden plank from all five WEST poses. Reveal the normal empty far RIGHT hand/forearm and purple tabard/torso behind it. The far arm has an iron bracer and an EMPTY fist, with no wood, shield rim, second shield, or extra weapon attached. Each ogre must have EXACTLY ONE shield: retain the existing large round foreground shield on its left arm, on viewer-right. Do not add another shield or move the good shield.\nDo not change pose count/order, character positions, scale, armor/tusks/skin, purple tabard, upper-left lighting, clear padding, 1536x1024 dimensions or true alpha transparency. Do not modify the other nineteen poses: preserve NORTH, EAST, SOUTH and the four death poses in the final column. Keep the WEST walking legs alternating. This is removal of five duplicate far-side shield edges only, not a redesign. No backdrop, painted checkerboard, ground shadow, labels, text or new objects. Return the transparent production sprite sheet.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-035cceb0-8dce-4518-aa14-723911c25af4.png",
+      "selected": true,
+      "review": "Chọn bản loại bỏ khiên thừa, một khiên ở hướng Tây; cần browser review animation."
+    }
+  ]
+}

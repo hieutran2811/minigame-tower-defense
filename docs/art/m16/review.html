@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M16 — The Last Beacon art review</title>
+<style>
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:#101a22;color:#e9e1cf;font:15px/1.6 system-ui,Segoe UI,sans-serif}main{max-width:1160px;margin:auto;padding:32px 24px 64px}h1,h2,h3{line-height:1.2;color:#f2c76b}h1{font-size:30px;margin:8px 0 16px}h2{margin-top:40px}a{color:#9cdef0}nav{display:flex;flex-wrap:wrap;gap:20px}.eyebrow{font-size:12px;letter-spacing:.16em;color:#b5c7b1}.note{padding:14px 18px;border-left:3px solid #e1b56c;background:#1d2b36}.muted,figcaption{color:#b9c5c7;font-size:13px}.board{margin:20px 0}.board img{display:block;width:100%;height:auto;border:1px solid #526e7e}.scroll-stage{overflow:auto;padding:12px 0}.stage{position:relative;width:960px;height:640px;overflow:hidden;background:#15202b;box-shadow:0 0 0 1px #526e7e;font-family:monospace}.world{position:absolute;left:0;top:0;width:768px;height:512px;image-rendering:auto}.guide{position:absolute;left:0;top:0;z-index:2;pointer-events:none}.mockup-panel>input:not(:checked)~.scroll-stage .guide{display:none}.mockup-panel>input{margin-right:8px}.hud{position:absolute;left:768px;top:0;width:192px;height:640px;background:#202d39;border-left:1px solid #526e7e;font-size:13px}.hud>*{position:absolute;left:18px;margin:0}.hud-title{top:24px;font-size:17px;color:#f5e6ae}.level{top:68px}.lives{top:112px}.match{top:132px;white-space:pre;line-height:21px}.types{top:208px;display:flex;gap:2px;width:148px}.types span{width:48px;text-align:center;background:#33485c;font-size:11px;line-height:24px}.types .chosen{background:#236b88;color:#f5e6ae}.control{width:148px;text-align:center;background:#33485c;color:#fff;line-height:32px;font-size:13px;border-radius:2px}.build{top:242px}.stats{top:282px;font-size:11px;color:#b4d9bc;white-space:nowrap}.hint{top:302px;font-size:12px;line-height:19px}.wave{top:360px;background:#236b88}.count{top:410px;color:#b9e8f5;font-size:15px}.restart{top:470px}.help{top:540px}.audio{top:608px;line-height:26px;font-size:12px}.footer{position:absolute;left:0;top:512px;width:768px;height:128px;background:#15202b;border-top:1px solid #526e7e}.footer p{position:absolute;left:24px;margin:0}.chapter{top:22px;font-size:18px;color:#f5e6ae}.keys{top:64px;font-size:13px;color:#aab7bd}.phase{top:94px;font-size:12px;color:#b4d9bc}.samples{display:flex;flex-wrap:wrap;gap:16px}.sample{width:136px;margin:0;padding:14px;background:#1d2b36;border:1px solid #3b5261;border-radius:4px}.sample-box{height:76px;display:flex;align-items:flex-end;justify-content:center;background:#e9dcc4}.sample svg{display:block}.sample figcaption{margin-top:10px}.sample strong,.sample span{display:block}.sample strong{color:#f5e6ae}table{border-collapse:collapse;width:100%}td,th{padding:10px;border:1px solid #3b5261;text-align:left;vertical-align:top}th{color:#f5e6ae}code{font-size:.92em}ul{padding-left:22px}@media(max-width:700px){main{padding:20px 16px}h1{font-size:25px}}
+</style>
+</head>
+<body><main>
+<header>
+<p class="eyebrow">M16 / THE LAST BEACON / ART REVIEW</p>
+<h1>Fantasy vẽ tay — goblin, tháp và thành trì</h1>
+<p>Artwork sinh bằng imagegen built-in. Trang này là bộ duyệt hình ảnh; runtime của game vẫn là M15.</p>
+<nav aria-label="Mục review"><a href="#board">Bảng concept</a><a href="#mockup">Mockup 960×640</a><a href="#scale">Xem cỡ nhỏ</a><a href="#notes">Điểm cần chốt</a><a href="README.md">Ghi chú kỹ thuật</a></nav>
+</header>
+<section id="board">
+<h2>1. Bảng concept</h2>
+<figure class="board"><img src="art-direction-board.png" width="1536" height="1024" alt="Bảng concept gồm Goblin, Scout, Ogre; ba tháp Basic, Rapid, Longbow; ba biome Border, Grove, Keep"><figcaption>PNG gốc 1536×1024. Màu sắc, chất liệu và silhouette để người dùng nghiệm thu trước khi sản xuất sprite.</figcaption></figure>
+</section>
+<section id="mockup">
+<h2>2. Mockup ở viewport 960×640</h2>
+<p class="note">Khung map/sidebar/footer được đặt đúng tọa độ bằng HTML. Bật lưới để so ảnh vẽ với path và vị trí tháp từ source. Artwork sinh còn lệch hình học; nó chưa phải tilemap dùng trong game.</p>
+<div class="mockup-panel">
+<input id="show-grid" type="checkbox" checked>
+<label for="show-grid">Hiện lưới và path chuẩn từ source — vàng: đường; xanh: footprint tháp</label>
+<div class="scroll-stage"><div class="stage" role="img" aria-label="Mockup 960x640: bản đồ vẽ tay bên trái, sidebar điều khiển bên phải và footer bên dưới; có overlay bố cục chuẩn để đối chiếu">
+<img class="world" src="border-watch-world.png" width="768" height="512" alt="">
+<svg class="guide" width="768" height="512" viewBox="0 0 768 512" aria-hidden="true">
+<g stroke="#ffffff" stroke-opacity=".45" stroke-width="1"><line x1="0" y1="0" x2="0" y2="512"/><line x1="64" y1="0" x2="64" y2="512"/><line x1="128" y1="0" x2="128" y2="512"/><line x1="192" y1="0" x2="192" y2="512"/><line x1="256" y1="0" x2="256" y2="512"/><line x1="320" y1="0" x2="320" y2="512"/><line x1="384" y1="0" x2="384" y2="512"/><line x1="448" y1="0" x2="448" y2="512"/><line x1="512" y1="0" x2="512" y2="512"/><line x1="576" y1="0" x2="576" y2="512"/><line x1="640" y1="0" x2="640" y2="512"/><line x1="704" y1="0" x2="704" y2="512"/><line x1="768" y1="0" x2="768" y2="512"/><line x1="0" y1="0" x2="768" y2="0"/><line x1="0" y1="64" x2="768" y2="64"/><line x1="0" y1="128" x2="768" y2="128"/><line x1="0" y1="192" x2="768" y2="192"/><line x1="0" y1="256" x2="768" y2="256"/><line x1="0" y1="320" x2="768" y2="320"/><line x1="0" y1="384" x2="768" y2="384"/><line x1="0" y1="448" x2="768" y2="448"/><line x1="0" y1="512" x2="768" y2="512"/></g>
+<g fill="#ffcf67" fill-opacity=".08" stroke="#ffcf67" stroke-width="2"><rect x="1" y="193" width="62" height="62"/><rect x="65" y="193" width="62" height="62"/><rect x="129" y="193" width="62" height="62"/><rect x="193" y="193" width="62" height="62"/><rect x="193" y="257" width="62" height="62"/><rect x="193" y="321" width="62" height="62"/><rect x="257" y="321" width="62" height="62"/><rect x="321" y="321" width="62" height="62"/><rect x="321" y="257" width="62" height="62"/><rect x="321" y="193" width="62" height="62"/><rect x="321" y="129" width="62" height="62"/><rect x="385" y="129" width="62" height="62"/><rect x="449" y="129" width="62" height="62"/><rect x="513" y="129" width="62" height="62"/><rect x="513" y="193" width="62" height="62"/><rect x="513" y="257" width="62" height="62"/><rect x="577" y="257" width="62" height="62"/><rect x="641" y="257" width="62" height="62"/><rect x="705" y="257" width="62" height="62"/></g>
+<polyline points="32,224 96,224 160,224 224,224 224,288 224,352 288,352 352,352 352,288 352,224 352,160 416,160 480,160 544,160 544,224 544,288 608,288 672,288 736,288" fill="none" stroke="#fff3b0" stroke-width="2" stroke-dasharray="6 5"/>
+<g fill="none" stroke="#7eddf5" stroke-width="2"><g><rect x="72" y="136" width="48" height="48"/><text x="76" y="149" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">B</text></g><g><rect x="200" y="136" width="48" height="48"/><text x="204" y="149" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">R</text></g><g><rect x="264" y="200" width="48" height="48"/><text x="268" y="213" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">L</text></g><g><rect x="72" y="264" width="48" height="48"/><text x="76" y="277" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">R</text></g><g><rect x="264" y="264" width="48" height="48"/><text x="268" y="277" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">B</text></g><g><rect x="584" y="200" width="48" height="48"/><text x="588" y="213" fill="#7eddf5" stroke="none" font-family="monospace" font-size="11">L</text></g></g>
+<g font-family="monospace" font-size="12" fill="#ffffff" stroke="#15202b" stroke-width=".5"><text x="8" y="207">IN</text><text x="710" y="271">OUT</text></g>
+</svg>
+<aside class="hud" aria-hidden="true">
+<p class="hud-title">TOWER DEFENSE</p><div class="control level">LEVEL 1/3</div><p class="lives">LIVES --</p><p class="match">WAVE --/3
+ALIVE --
+KILLS --</p>
+<div class="types"><span class="chosen">BASIC</span><span>RAPID</span><span>BOW</span></div>
+<div class="control build">BUILD BASIC</div><p class="stats">128px / 1s / 1 DMG</p><p class="hint">Choose type, then<br>B / BUILD to place.</p>
+<div class="control wave">START WAVE</div><p class="count">TOWERS --</p><div class="control restart">RESTART</div><div class="control help">HOW TO PLAY</div><div class="control audio">AUDIO: OFF</div>
+</aside>
+<div class="footer" aria-hidden="true"><p class="chapter">BORDER WATCH</p><p class="keys">B build / N next wave / R restart / H help / Esc cancel</p><p class="phase">ART CONCEPT — illustrative scene; no recorded match results</p></div>
+</div></div></div>
+<p class="muted">Xem ở zoom trình duyệt 100%; cuộn ngang nếu cửa sổ hẹp. Bản đồ 1536×1024 được hiển thị 768×512 bằng cùng hệ số 0,5 trên hai trục. Các control trong hình chỉ là trình bày.</p>
+</section>
+<section id="scale">
+<h2>3. Silhouette trong khung 56–64 CSS px</h2>
+<div class="samples"><figure class="sample"><div class="sample-box"><svg width="56" height="56" viewBox="96 32 352 288" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Goblin thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Goblin</strong><span>Khung xem 56px</span></figcaption></figure>
+<figure class="sample"><div class="sample-box"><svg width="56" height="56" viewBox="576 16 400 304" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Scout thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Scout</strong><span>Khung xem 56px</span></figcaption></figure>
+<figure class="sample"><div class="sample-box"><svg width="64" height="64" viewBox="1048 0 488 336" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Ogre thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Ogre</strong><span>Khung xem 64px</span></figcaption></figure>
+<figure class="sample"><div class="sample-box"><svg width="64" height="64" viewBox="70 350 410 296" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Basic thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Basic</strong><span>Khung xem 64px</span></figcaption></figure>
+<figure class="sample"><div class="sample-box"><svg width="64" height="64" viewBox="570 350 430 300" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Rapid thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Rapid</strong><span>Khung xem 64px</span></figcaption></figure>
+<figure class="sample"><div class="sample-box"><svg width="64" height="64" viewBox="1050 340 486 320" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Concept Longbow thu nhỏ"><image href="art-direction-board.png" width="1536" height="1024"/></svg></div><figcaption><strong>Longbow</strong><span>Khung xem 64px</span></figcaption></figure></div>
+<p class="muted">Các khung là crop vùng concept được trình duyệt thu nhỏ, còn nền giấy; chúng không phải sprite đã tách alpha. Kích thước cơ thể và pivot cuối cùng sẽ chốt trong M17. Dùng các khung này để xem chi tiết nào còn đọc được.</p>
+</section>
+<section id="notes">
+<h2>4. Điểm cần chốt trước M17</h2>
+<table><thead><tr><th>Hạng mục</th><th>Quan sát / trạng thái</th></tr></thead><tbody>
+<tr><td>Palette và chất liệu</td><td>Da goblin, vải tím/cam, giáp ogre và gỗ/đá/thép có bản sắc rõ; chờ người dùng nghiệm thu.</td></tr>
+<tr><td>Góc nhìn</td><td>Bảng concept thể hiện nhân vật gần góc 3/4; sprite sản xuất cần kiểm tra góc overhead đồng nhất khi đi bốn hướng.</td></tr>
+<tr><td>Lưới và footprint</td><td>Ba lần tạo mockup vẫn còn sai lệch tọa độ/tỷ lệ trong ảnh. Dừng thử sinh ảnh cho lỗi này; overlay source là chuẩn. M16 chưa đạt tiêu chí khớp hình học.</td></tr>
+<tr><td>Silhouette nhỏ</td><td>Ogre/khiên rộng, cánh Longbow dài và chi tiết cơ khí dễ bị nhỏ đi. Cần thu gọn dáng và kiểm tra bbox lúc sản xuất frame.</td></tr>
+<tr><td>Terrain và cổng</td><td>Props trong concept có chỗ đậm/rậm; cổng chạm biên ảnh. Bộ tiles/gates M19 cần padding và giữ mọi ô đất trống nhìn rõ để xây.</td></tr>
+<tr><td>Runtime</td><td>Chưa tích hợp PNG vào game; ảnh chưa có atlas, alpha riêng hoặc animation. HP/speed/range/cadence/damage và path giữ nguyên trong source.</td></tr>
+</tbody></table>
+<p>Người dùng cần review hướng mỹ thuật và các sai lệch đã ghi. Chỉ chuyển sang sản xuất sprite sau khi nghiệm thu hoặc thống nhất điều chỉnh tiêu chí M16.</p>
+</section>
+</main></body></html>

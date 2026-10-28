@@ -215,5 +215,31 @@ export function checkTool(input, root, scripts = {}) {
   }
   if (name === 'view_image') return checkPath(args.path ?? '', root);
   if (['update_plan', 'request_user_input', 'request_user_input_async'].includes(name)) return allow;
+  if (name === 'image_genimagegen') {
+    const permittedKeys = [
+      'prompt',
+      'transparent_background',
+      'num_last_images_to_include',
+      'referenced_image_paths',
+    ];
+    if (
+      !args || typeof args !== 'object' || Array.isArray(args) ||
+      typeof args.prompt !== 'string' || args.prompt.trim().length === 0 ||
+      args.prompt.length > 12000 ||
+      !(
+  args.transparent_background === false ||
+  (
+    args.transparent_background === true &&
+    args.prompt.startsWith('M17 enemy sprite sheet\n')
+  )
+) ||
+      ![undefined, null, 1].includes(args.num_last_images_to_include) ||
+      args.referenced_image_paths != null ||
+      Object.keys(args).some((key) => !permittedKeys.includes(key))
+    ) {
+      return confirm('Image generation outside the reviewed M16 input shape requires human review.');
+    }
+    return allow;
+  }
   return confirm('This local/MCP tool is outside the reviewed policy surface; human review is required.');
 }

@@ -1,0 +1,446 @@
+{
+  "scope": "Read-only source inspection and atlas geometry checks; not a Vitest/browser pass",
+  "assets": [
+    {
+      "kind": "basic",
+      "source": "goblin-raider-candidate.png",
+      "bytes": 2418513,
+      "sha256": "84f4df27d7b19f6b25680f2fc6d859d406818dc663cbce1f016deb9f823edc45",
+      "poses": 24,
+      "geometryValid": true,
+      "cropsOverlap": false,
+      "displaySize": 64,
+      "bodyHeightPx": {
+        "min": 38.8,
+        "max": 42.2
+      },
+      "maxCropBorderAlpha": 2,
+      "sourcePngUnchanged": true,
+      "alphaInspection": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 2418513,
+        "edges": [
+          {
+            "frame": "0",
+            "borderAlpha": 1,
+            "visiblePixels": 18654
+          },
+          {
+            "frame": "1",
+            "borderAlpha": 1,
+            "visiblePixels": 18345
+          },
+          {
+            "frame": "2",
+            "borderAlpha": 1,
+            "visiblePixels": 18359
+          },
+          {
+            "frame": "3",
+            "borderAlpha": 1,
+            "visiblePixels": 18425
+          },
+          {
+            "frame": "4",
+            "borderAlpha": 1,
+            "visiblePixels": 18862
+          },
+          {
+            "frame": "5",
+            "borderAlpha": 2,
+            "visiblePixels": 21567
+          },
+          {
+            "frame": "6",
+            "borderAlpha": 1,
+            "visiblePixels": 20230
+          },
+          {
+            "frame": "7",
+            "borderAlpha": 1,
+            "visiblePixels": 20180
+          },
+          {
+            "frame": "8",
+            "borderAlpha": 1,
+            "visiblePixels": 20149
+          },
+          {
+            "frame": "9",
+            "borderAlpha": 2,
+            "visiblePixels": 20722
+          },
+          {
+            "frame": "10",
+            "borderAlpha": 1,
+            "visiblePixels": 20363
+          },
+          {
+            "frame": "11",
+            "borderAlpha": 1,
+            "visiblePixels": 19666
+          },
+          {
+            "frame": "12",
+            "borderAlpha": 1,
+            "visiblePixels": 18969
+          },
+          {
+            "frame": "13",
+            "borderAlpha": 1,
+            "visiblePixels": 18910
+          },
+          {
+            "frame": "14",
+            "borderAlpha": 1,
+            "visiblePixels": 18723
+          },
+          {
+            "frame": "15",
+            "borderAlpha": 1,
+            "visiblePixels": 19116
+          },
+          {
+            "frame": "16",
+            "borderAlpha": 1,
+            "visiblePixels": 19444
+          },
+          {
+            "frame": "17",
+            "borderAlpha": 1,
+            "visiblePixels": 20134
+          },
+          {
+            "frame": "18",
+            "borderAlpha": 1,
+            "visiblePixels": 20171
+          },
+          {
+            "frame": "19",
+            "borderAlpha": 1,
+            "visiblePixels": 20722
+          },
+          {
+            "frame": "20",
+            "borderAlpha": 1,
+            "visiblePixels": 21151
+          },
+          {
+            "frame": "21",
+            "borderAlpha": 1,
+            "visiblePixels": 20774
+          },
+          {
+            "frame": "22",
+            "borderAlpha": 1,
+            "visiblePixels": 21205
+          },
+          {
+            "frame": "23",
+            "borderAlpha": 1,
+            "visiblePixels": 17054
+          }
+        ],
+        "maxCropBorderAlpha": 2,
+        "allCropsContainArtwork": true,
+        "allEdgesWithinTolerance": true
+      }
+    },
+    {
+      "kind": "runner",
+      "source": "goblin-scout.png",
+      "bytes": 2578828,
+      "sha256": "bd87d6dbed1964caa7f1fdaf1328578fb92e85255364a91409919e10c07c2f26",
+      "poses": 24,
+      "geometryValid": true,
+      "cropsOverlap": false,
+      "displaySize": 56,
+      "bodyHeightPx": {
+        "min": 35,
+        "max": 40.25
+      },
+      "maxCropBorderAlpha": 2,
+      "sourcePngUnchanged": true,
+      "alphaInspection": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 2578828,
+        "edges": [
+          {
+            "frame": "0",
+            "borderAlpha": 2,
+            "visiblePixels": 19801
+          },
+          {
+            "frame": "1",
+            "borderAlpha": 1,
+            "visiblePixels": 19106
+          },
+          {
+            "frame": "2",
+            "borderAlpha": 2,
+            "visiblePixels": 20605
+          },
+          {
+            "frame": "3",
+            "borderAlpha": 1,
+            "visiblePixels": 19569
+          },
+          {
+            "frame": "4",
+            "borderAlpha": 1,
+            "visiblePixels": 19654
+          },
+          {
+            "frame": "5",
+            "borderAlpha": 1,
+            "visiblePixels": 21250
+          },
+          {
+            "frame": "6",
+            "borderAlpha": 2,
+            "visiblePixels": 21557
+          },
+          {
+            "frame": "7",
+            "borderAlpha": 1,
+            "visiblePixels": 21589
+          },
+          {
+            "frame": "8",
+            "borderAlpha": 1,
+            "visiblePixels": 22708
+          },
+          {
+            "frame": "9",
+            "borderAlpha": 1,
+            "visiblePixels": 22820
+          },
+          {
+            "frame": "10",
+            "borderAlpha": 1,
+            "visiblePixels": 22815
+          },
+          {
+            "frame": "11",
+            "borderAlpha": 1,
+            "visiblePixels": 19083
+          },
+          {
+            "frame": "12",
+            "borderAlpha": 2,
+            "visiblePixels": 20225
+          },
+          {
+            "frame": "13",
+            "borderAlpha": 1,
+            "visiblePixels": 19936
+          },
+          {
+            "frame": "14",
+            "borderAlpha": 1,
+            "visiblePixels": 20278
+          },
+          {
+            "frame": "15",
+            "borderAlpha": 1,
+            "visiblePixels": 21488
+          },
+          {
+            "frame": "16",
+            "borderAlpha": 1,
+            "visiblePixels": 20564
+          },
+          {
+            "frame": "17",
+            "borderAlpha": 2,
+            "visiblePixels": 22661
+          },
+          {
+            "frame": "18",
+            "borderAlpha": 1,
+            "visiblePixels": 22661
+          },
+          {
+            "frame": "19",
+            "borderAlpha": 1,
+            "visiblePixels": 23160
+          },
+          {
+            "frame": "20",
+            "borderAlpha": 1,
+            "visiblePixels": 23821
+          },
+          {
+            "frame": "21",
+            "borderAlpha": 1,
+            "visiblePixels": 23117
+          },
+          {
+            "frame": "22",
+            "borderAlpha": 2,
+            "visiblePixels": 23854
+          },
+          {
+            "frame": "23",
+            "borderAlpha": 2,
+            "visiblePixels": 18181
+          }
+        ],
+        "maxCropBorderAlpha": 2,
+        "allCropsContainArtwork": true,
+        "allEdgesWithinTolerance": true
+      }
+    },
+    {
+      "kind": "guard",
+      "source": "armored-ogre.png",
+      "bytes": 2696177,
+      "sha256": "42a778de0af81551b03df05f13354fad363f8a34ae614ec9d5afd2d5e7208426",
+      "poses": 24,
+      "geometryValid": true,
+      "cropsOverlap": false,
+      "displaySize": 70,
+      "bodyHeightPx": {
+        "min": 44.19,
+        "max": 47.69
+      },
+      "maxCropBorderAlpha": 2,
+      "sourcePngUnchanged": true,
+      "alphaInspection": {
+        "width": 1536,
+        "height": 1024,
+        "bytes": 2696177,
+        "edges": [
+          {
+            "frame": "0",
+            "borderAlpha": 1,
+            "visiblePixels": 28813
+          },
+          {
+            "frame": "1",
+            "borderAlpha": 1,
+            "visiblePixels": 27452
+          },
+          {
+            "frame": "2",
+            "borderAlpha": 0,
+            "visiblePixels": 26290
+          },
+          {
+            "frame": "3",
+            "borderAlpha": 0,
+            "visiblePixels": 26645
+          },
+          {
+            "frame": "4",
+            "borderAlpha": 0,
+            "visiblePixels": 28536
+          },
+          {
+            "frame": "5",
+            "borderAlpha": 1,
+            "visiblePixels": 34091
+          },
+          {
+            "frame": "6",
+            "borderAlpha": 1,
+            "visiblePixels": 28659
+          },
+          {
+            "frame": "7",
+            "borderAlpha": 1,
+            "visiblePixels": 27022
+          },
+          {
+            "frame": "8",
+            "borderAlpha": 1,
+            "visiblePixels": 24514
+          },
+          {
+            "frame": "9",
+            "borderAlpha": 1,
+            "visiblePixels": 26018
+          },
+          {
+            "frame": "10",
+            "borderAlpha": 0,
+            "visiblePixels": 25902
+          },
+          {
+            "frame": "11",
+            "borderAlpha": 0,
+            "visiblePixels": 26924
+          },
+          {
+            "frame": "12",
+            "borderAlpha": 1,
+            "visiblePixels": 29513
+          },
+          {
+            "frame": "13",
+            "borderAlpha": 0,
+            "visiblePixels": 28947
+          },
+          {
+            "frame": "14",
+            "borderAlpha": 1,
+            "visiblePixels": 28371
+          },
+          {
+            "frame": "15",
+            "borderAlpha": 1,
+            "visiblePixels": 27249
+          },
+          {
+            "frame": "16",
+            "borderAlpha": 0,
+            "visiblePixels": 29506
+          },
+          {
+            "frame": "17",
+            "borderAlpha": 2,
+            "visiblePixels": 27746
+          },
+          {
+            "frame": "18",
+            "borderAlpha": 1,
+            "visiblePixels": 28138
+          },
+          {
+            "frame": "19",
+            "borderAlpha": 0,
+            "visiblePixels": 26399
+          },
+          {
+            "frame": "20",
+            "borderAlpha": 0,
+            "visiblePixels": 27588
+          },
+          {
+            "frame": "21",
+            "borderAlpha": 0,
+            "visiblePixels": 27084
+          },
+          {
+            "frame": "22",
+            "borderAlpha": 0,
+            "visiblePixels": 25417
+          },
+          {
+            "frame": "23",
+            "borderAlpha": 1,
+            "visiblePixels": 21305
+          }
+        ],
+        "maxCropBorderAlpha": 2,
+        "allCropsContainArtwork": true,
+        "allEdgesWithinTolerance": true
+      }
+    }
+  ],
+  "totalPngBytes": 7693518,
+  "estimatedDecodedRgbaBytes": 18874368,
+  "performanceMeasured": false
+}

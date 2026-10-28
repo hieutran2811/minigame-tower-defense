@@ -1,0 +1,690 @@
+diff --git a/README.md b/README.md
+index a7b1c61..e66f6cc 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# The Last Beacon — Milestone 13
++# The Last Beacon — Milestone 14
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -137,9 +137,9 @@ The result panel shows the wave reached, kills, remaining lives, and towers buil
+ 
+ | Kind | HP | Speed | Appearance |
+ | --- | --- | --- | --- |
+-| Basic | 3 | 95px/s | Original purple square |
+-| Runner | 2 | 140px/s | Orange diamond with R |
+-| Guard | 7 | 65px/s | Larger blue-gray body, shield, and G |
++| Basic | 3 | 95px/s | Purple square with small horns |
++| Runner | 2 | 140px/s | Orange diamond, cape, and R |
++| Guard | 7 | 65px/s | Blue-gray shoulder armor, crest, shield, and G |
+ 
+ All kinds still cost one life on escape and add one kill on death. Guard has more
+ HP, with no armor reduction or special ability. Every HP bar starts full and uses
+@@ -199,6 +199,29 @@ free placement. Play through the mixed-enemy chapters before accepting balance;
+ the options are not claimed to have equal strength. Basic remains the reference.
+ Profiles and the sidebar order are in `src/config/towerConfig.ts`.
+ 
++## Terrain and animation
++
++Border Watch has scattered golden shoots, Whispering Grove has flat ferns and
++small violet flowers, and Dawn Keep has stone fragments. Details are deterministic
++and stay near tile corners. They are background art: every empty ground tile is
++still buildable, and path/occupied-tile rules are unchanged. Path shoulders follow
++the route boundary, with small pebbles away from the turn arrows.
++
++The exit has a stone gate, battlements, windows, and a softly pulsing beacon,
++all inside its tile below enemies and HP bars. IN/OUT markers, escape warnings,
++previews, and inspection retain their layers and visibility.
++
++Enemies have ground shadows, small feet, and distinct horn/cape/armor details.
++Walking moves only their figure by up to one pixel, with alternating feet based
++on traveled distance. The combat/root position, shadow, and HP bar do not bob;
++speed, targeting, damage, and exit timing are unchanged. Tower shadows, stone
++bases, and the Longbow string add depth without changing their aiming or stats.
++
++Terrain is drawn once per scene. Walking adds no timers or tweens. The beacon has
++one ambient alpha tween, which can continue behind menus/results; Phaser clears
++scene tweens and objects on Restart/chapter changes. Existing combat flashes and
++audio behavior stay unchanged.
++
+ ## Combat
+ 
+ | Setting | Value |
+@@ -273,7 +296,33 @@ npm run preview
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 13 verification status
++### Milestone 14 verification status
++
++M14 implements the rendering portion of the approved graphics/gameplay polish:
++chapter terrain details, a stronger fortress/beacon, enemy/tower shadows, richer
++silhouettes, and small walking/ambient animation. Balance and browser acceptance
++remain pending; there are no stat, path, wave, economy, or dependency changes.
++
++- `drawTerrain.ts` holds the map drawing previously in `GameScene.drawMap`, plus
++  route shoulders and flat decorations. No placement data or hit areas are added.
++- `Enemy` keeps its root at the follower's combat position and animates a nested
++  figure. The HP bar/shadow are siblings, so the walking motion cannot move them.
++- Added six `EnemyPresentation.test.ts` cases with drawing stubs for all profiles,
++  anchored HP/shadows, damage normalization, long-frame corners/exits, and target
++  invalidation/child cleanup. M13 tower test stubs gained only the new drawing APIs.
++- Source review checked drawing bounds/layers and figure ownership. The installed
++  Phaser TweenManager's shutdown calls `killAll()`, covering the beacon tween.
++- `npm run test` and `npm run build` were attempted after M14 implementation.
++  Both exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. New tests, TypeScript checking, and the build are unconfirmed.
++- Static checks confirmed the M13 patch reconstructs its eight reviewed files
++  and each chapter's eight playtest positions are distinct, in bounds, and off its path.
++  These checks do not execute Vitest, Phaser, or a browser.
++- [docs/playtest-M14.md](docs/playtest-M14.md) records nine pending chapter/type
++  comparisons plus rendering, production, scaling, Restart, audio, and console
++  checks. No playtest results or balance success are claimed.
++
++### Milestone 13 verification status (previously recorded)
+ 
+ M13 follows the tower-choice roadmap: Basic stays unchanged; Rapid and Longbow
+ add contrasting range/cadence/damage profiles, procedural shapes, and shot colors.
+@@ -457,6 +506,15 @@ sharpness on other displays still need manual verification.
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Follow [docs/playtest-M14.md](docs/playtest-M14.md) for the visual/lifecycle
++      checks and controlled chapter/type comparisons. Record actual results.
++- [ ] Confirm flat terrain decorations stay buildable, paths and turn arrows stay
++      readable, and the fortress/OUT/beacon fit the exit tile on every map.
++- [ ] Watch clustered enemies: body/feet move slightly while HP bars and shadows
++      remain anchored. Check profile markers, hit flashes, aiming and shot colors.
++- [ ] Repeat Restart/chapter changes during effects and audio. Verify only one
++      current beacon pulse, no old visuals/tones, correct scaling, no console
++      errors, and no FPS/development label in production.
+ - [ ] Confirm Basic is initially selected and selected again after Restart or
+       chapter selection. B/BUILD should place that type and Esc cancel building.
+ - [ ] Choose Rapid and BOW before and during waves. While building, change type:
+@@ -626,11 +684,14 @@ projectile damage/ownership, spawning intervals, lives, and outcomes are unchang
+ M13 adds Rapid/Longbow tower profiles, type selection, per-kind previews/inspection,
+ procedural silhouettes, shot colors, and damage/cadence. Basic and the shared
+ combat algorithms remain unchanged. Economy, upgrades, and selling remain out of scope.
++M14 adds terrain/path-edge details, fortress art, shadows, enemy walking, and
++ambient beacon animation. Combat and level/wave definitions are unchanged; the
++playtest sheet records pending balance and browser verification.
+ See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 through M13 build verification is pending as described above.
++M5 through M14 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index 77dd72f..ab82ddf 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -59,12 +59,22 @@ Implemented in code, awaiting automated/browser acceptance:
+ 
+ ## M14: graphics and gameplay polish
+ 
+-- Give enemies and towers recognizable pixel silhouettes, beyond palette swaps.
+-- Add terrain details, stronger beacon/fortress art, shadows, and restrained
+-  animation while keeping paths, HP bars, previews, and projectiles readable.
+-- Playtest wave composition and tower tradeoffs across all maps.
+-- Check production rendering, scaling, repeated Restart, audio cleanup, and the
+-  browser console. Keep FPS/development labels limited to development.
++Rendering implemented; automated/browser acceptance and balance playtests pending:
++
++- Deterministic flat terrain details distinguish border/forest/ruins; route-edge
++  shoulders and sparse pebbles retain readable paths. Empty ground stays buildable.
++- A crenellated gate and one ambient beacon pulse fit inside each map's exit tile.
++- Ground shadows, feet, horns/cape/armor, tower masonry and a bow string enrich
++  silhouettes. Walking moves only the figure; combat positions/HP bars stay stable.
++- Reuse existing rendering APIs and lifecycle. No dependencies, stat changes,
++  wave changes, new obstacles, or extra enemy/tower mechanics.
++- Six entity presentation tests protect combat coordinates, HP and cleanup; tower
++  test fixtures only gain drawing methods. npm test/build are blocked as recorded
++  in the README, so those tests and production output remain unconfirmed.
++- Use [playtest-M14.md](playtest-M14.md) for nine chapter/type comparisons and
++  production rendering, scaling, repeated Restart, audio cleanup, and console
++  checks. FPS/development labels remain development-only. No balance conclusions
++  are made before playing these runs.
+ 
+ Economy, upgrades, selling, backend, and multiplayer are not introduced by this
+ roadmap. Further business-rule or dependency changes remain separate review items.
+diff --git a/src/entities/Enemy.ts b/src/entities/Enemy.ts
+index 243763d..d99e8cc 100644
+--- a/src/entities/Enemy.ts
++++ b/src/entities/Enemy.ts
+@@ -7,6 +7,9 @@ import { PathFollower } from '../systems/PathFollower';
+ export class Enemy {
+   readonly target: CombatTarget;
+   private readonly sprite: Phaser.GameObjects.Container;
++  private readonly figure: Phaser.GameObjects.Container;
++  private readonly feet: Phaser.GameObjects.Rectangle[];
++  private readonly footY: number;
+   private readonly healthBar: Phaser.GameObjects.Rectangle;
+   private readonly hitFlash: Phaser.GameObjects.Rectangle;
+   private readonly follower: PathFollower;
+@@ -35,6 +38,29 @@ export class Enemy {
+ 
+     const width = kind === 'guard' ? 34 : kind === 'runner' ? 30 : 26;
+     const height = kind === 'guard' ? 32 : kind === 'runner' ? 24 : 26;
++    const shadow = scene.add.ellipse(0, 18, width + 8, 10, 0x15202b, 0.28);
++    this.footY = height / 2 + 1;
++    this.feet = [-7, 7].map((x) =>
++      scene.add.rectangle(x, this.footY, 6, 6, profile.outline),
++    );
++    const content: Phaser.GameObjects.GameObject[] = [...this.feet];
++
++    if (kind === 'runner') {
++      content.push(scene.add.polygon(-11, 4, [0, 0, 18, 0, 18, 14, 0, 9], profile.outline));
++    } else if (kind === 'guard') {
++      content.push(
++        scene.add.rectangle(-17, -4, 6, 12, profile.outline),
++        scene.add.rectangle(17, -4, 6, 12, profile.outline),
++        scene.add.rectangle(0, -17, 10, 5, profile.outline),
++        scene.add.rectangle(0, -17, 2, 5, 0xb9e8f5),
++      );
++    } else {
++      content.push(
++        scene.add.rectangle(-10, -15, 5, 6, profile.outline),
++        scene.add.rectangle(10, -15, 5, 6, profile.outline),
++      );
++    }
++
+     const body = kind === 'runner'
+       ? scene.add
+         .polygon(0, 0, [0, 12, 15, 0, 30, 12, 15, 24], profile.color)
+@@ -43,11 +69,12 @@ export class Enemy {
+         .rectangle(0, 0, width, height, profile.color)
+         .setStrokeStyle(kind === 'guard' ? 4 : 3, profile.outline);
+     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
+-    const content: Phaser.GameObjects.GameObject[] = [body, eyes];
++    content.push(body, eyes);
+ 
+     if (kind === 'guard') {
+       content.push(
+         scene.add.rectangle(0, 7, 14, 14, 0xb9e8f5).setStrokeStyle(2, profile.outline),
++        scene.add.rectangle(0, 1, 10, 2, 0xffffff),
+       );
+     }
+ 
+@@ -62,22 +89,27 @@ export class Enemy {
+       );
+     }
+ 
++    this.figure = scene.add.container(0, 0, content);
+     const barWidth = kind === 'guard' ? 42 : 30;
+     const barY = kind === 'guard' ? -27 : -23;
+     const healthBackground = scene.add.rectangle(0, barY, barWidth, 5, 0x633545);
+     this.healthBar = scene.add
+       .rectangle(-barWidth / 2, barY, barWidth, 5, 0x91ff9e)
+       .setOrigin(0, 0.5);
+-    content.push(healthBackground, this.healthBar);
+-
+     this.sprite = scene.add
+-      .container(path[0].x, path[0].y, content)
++      .container(path[0].x, path[0].y, [shadow, this.figure, healthBackground, this.healthBar])
+       .setDepth(2);
+   }
+ 
+   update(deltaMs: number): void {
+     this.follower.update(deltaMs / 1000);
+     this.sprite.setPosition(this.follower.position.x, this.follower.position.y);
++    // Animate only the figure: combat position, shadow and HP bars stay anchored.
++    const distance = this.follower.distanceTraveled;
++    this.figure.setY(Math.round(Math.sin(distance / 8)));
++    const step = Math.round(Math.sin(distance / 5));
++    this.feet[0].setY(this.footY + step);
++    this.feet[1].setY(this.footY - step);
+   }
+ 
+   refreshHealthBar(): boolean {
+diff --git a/src/entities/Tower.ts b/src/entities/Tower.ts
+index 1a38ac1..2abdd59 100644
+--- a/src/entities/Tower.ts
++++ b/src/entities/Tower.ts
+@@ -16,9 +16,16 @@ export class Tower extends Phaser.GameObjects.Container {
+     this.profile = profile;
+     this.attack = new TowerAttack(profile.range, profile.interval);
+ 
++    const shadow = scene.add.ellipse(0, 24, 46, 12, 0x15202b, 0.3);
+     const base = scene.add
+       .rectangle(0, 6, 40, 32, 0x33485c)
+       .setStrokeStyle(3, 0x1b2c3b);
++    const masonry = scene.add.graphics()
++      .fillStyle(0x71899a)
++      .fillRect(-16, 17, 11, 3)
++      .fillRect(5, 17, 11, 3)
++      .fillStyle(0x1b2c3b)
++      .fillRect(-1, 13, 2, 9);
+     const head = kind === 'rapid'
+       ? scene.add
+         .polygon(0, 0, [0, 13, 13, 0, 26, 13, 13, 26], profile.color)
+@@ -42,6 +49,12 @@ export class Tower extends Phaser.GameObjects.Container {
+ 
+     if (kind === 'longbow') {
+       content.push(scene.add.graphics()
++        .lineStyle(1, 0xf5e6ae)
++        .beginPath()
++        .moveTo(-15, -8)
++        .lineTo(0, 3)
++        .lineTo(15, -8)
++        .strokePath()
+         .lineStyle(3, profile.outline)
+         .beginPath()
+         .moveTo(-15, -8)
+@@ -56,7 +69,7 @@ export class Tower extends Phaser.GameObjects.Container {
+ 
+     content.push(this.muzzleFlash);
+     this.turret = scene.add.container(0, 0, content);
+-    this.add([base, this.turret]);
++    this.add([shadow, base, masonry, this.turret]);
+     this.setDepth(1);
+     scene.add.existing(this);
+   }
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+index c2fce0a..2b5b376 100644
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -14,6 +14,7 @@ import { WaveSystem } from '../systems/WaveSystem';
+ import { createHelpPanel } from './createHelpPanel';
+ import { createLevelPanel } from './createLevelPanel';
+ import { drawPathGuides } from './drawPathGuides';
++import { drawTerrain } from './drawTerrain';
+ 
+ export class GameScene extends Phaser.Scene {
+   private enemies: Enemy[] = [];
+@@ -107,34 +108,8 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private drawMap(): void {
+-    const colors = this.level.colors;
+-    const pathSet = new Set(this.level.path.map((point) => `${point.x},${point.y}`));
+-    const graphics = this.add.graphics();
+-
+-    for (let y = 0; y < ROWS; y++) {
+-      for (let x = 0; x < COLS; x++) {
+-        const isPath = pathSet.has(`${x},${y}`);
+-        const base = isPath
+-          ? colors.path
+-          : colors.grass[(x + y) % 2];
+-
+-        graphics.fillStyle(base).fillRect(x * TILE, y * TILE, TILE, TILE);
+-        graphics
+-          .lineStyle(1, isPath ? colors.pathEdge : colors.grassEdge, 0.55)
+-          .strokeRect(x * TILE, y * TILE, TILE, TILE);
+-
+-        if (!isPath && (x * 17 + y * 23) % 7 === 0) {
+-          graphics
+-            .fillStyle(colors.grassDark)
+-            .fillRect(x * TILE + 15, y * TILE + 18, 8, 5);
+-          graphics
+-            .fillStyle(colors.grassLight)
+-            .fillRect(x * TILE + 18, y * TILE + 15, 4, 4);
+-        }
+-      }
+-    }
+-
+-    graphics
++    drawTerrain(this, this.level);
++    this.add.graphics()
+       .fillStyle(0x202d39)
+       .fillRect(COLS * TILE, 0, WIDTH - COLS * TILE, ROWS * TILE);
+ 
+diff --git a/src/scenes/drawPathGuides.ts b/src/scenes/drawPathGuides.ts
+index e3ba062..790c59d 100644
+--- a/src/scenes/drawPathGuides.ts
++++ b/src/scenes/drawPathGuides.ts
+@@ -36,14 +36,43 @@ export function drawPathGuides(
+   const gateX = exit.x * TILE;
+   const gateY = exit.y * TILE;
+   graphics
++    .fillStyle(0x15202b, 0.35)
++    .fillRect(gateX + 8, gateY + 56, 48, 6)
+     .fillStyle(0x33485c)
+-    .fillRect(gateX + 16, gateY + 28, 32, 24)
+-    .fillRect(gateX + 12, gateY + 22, 10, 30)
+-    .fillRect(gateX + 42, gateY + 22, 10, 30)
++    .fillRect(gateX + 18, gateY + 35, 28, 25)
++    .fillRect(gateX + 8, gateY + 28, 13, 32)
++    .fillRect(gateX + 43, gateY + 28, 13, 32)
++    .fillRect(gateX + 8, gateY + 24, 5, 8)
++    .fillRect(gateX + 16, gateY + 24, 5, 8)
++    .fillRect(gateX + 43, gateY + 24, 5, 8)
++    .fillRect(gateX + 51, gateY + 24, 5, 8)
++    .fillStyle(0x71899a)
++    .fillRect(gateX + 10, gateY + 32, 3, 24)
++    .fillRect(gateX + 45, gateY + 32, 3, 24)
++    .fillRect(gateX + 22, gateY + 36, 20, 3)
+     .fillStyle(0x15202b)
+-    .fillRect(gateX + 28, gateY + 39, 8, 13)
++    .fillRect(gateX + 12, gateY + 38, 4, 7)
++    .fillRect(gateX + 48, gateY + 38, 4, 7)
++    .fillRect(gateX + 26, gateY + 45, 12, 15)
++    .fillRect(gateX + 28, gateY + 42, 8, 5)
++    .fillStyle(0x967046)
++    .fillRect(gateX + 28, gateY + 48, 2, 12)
++    .fillRect(gateX + 34, gateY + 48, 2, 12)
++    .fillStyle(0x71899a)
++    .fillRect(gateX + 25, gateY + 32, 14, 3)
+     .fillStyle(0xf5e6ae)
+-    .fillRect(gateX + 29, gateY + 23, 6, 8);
++    .fillRect(gateX + 28, gateY + 29, 8, 3);
++
++  const beacon = scene.add
++    .rectangle(gateX + 32, gateY + 26, 4, 6, 0xffedb5)
++    .setDepth(0.5);
++  scene.tweens.add({
++    targets: beacon,
++    alpha: 0.45,
++    duration: 700,
++    yoyo: true,
++    repeat: -1,
++  });
+ 
+   const endpoints = [
+     { tile: path[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
+diff --git a/src/tests/TowerTypes.test.ts b/src/tests/TowerTypes.test.ts
+index c43e006..88bf4fa 100644
+--- a/src/tests/TowerTypes.test.ts
++++ b/src/tests/TowerTypes.test.ts
+@@ -34,6 +34,8 @@ function createScene(): Phaser.Scene {
+     destroy() {},
+   });
+   const graphics = () => ({
++    fillStyle() { return this; },
++    fillRect() { return this; },
+     lineStyle() { return this; },
+     beginPath() { return this; },
+     moveTo() { return this; },
+@@ -43,6 +45,7 @@ function createScene(): Phaser.Scene {
+   return {
+     add: {
+       rectangle: shape,
++      ellipse: shape,
+       polygon: shape,
+       graphics,
+       container: shape,
+diff --git a/docs/playtest-M14.md b/docs/playtest-M14.md
+new file mode 100644
+--- /dev/null
++++ b/docs/playtest-M14.md
+@@ -0,0 +1,66 @@
++# M14 playtest sheet
++
++Status: not run in the agent environment. Node fails before npm scripts with
++`EPERM: lstat 'C:\Users\Admin'`; browser/production acceptance is pending.
++
++## Rendering and lifecycle
++
++Run `npm run test`, `npm run build`, then `npm run preview` in your terminal.
++Use both development and production views for the checks below.
++
++- [ ] Each chapter has its own flat terrain details. All empty ground remains
++      buildable; decorations never add obstacles or cover the path's markers.
++- [ ] OUT, the gate, and the beacon fit inside the exit tile on all three maps.
++      Enemy HP bars, projectiles, and the lost-life warning remain readable.
++- [ ] Horned Basic, caped Runner/R, and armored Guard/G remain distinct when
++      clustered. Feet/body move slightly; HP bars and ground shadows stay steady.
++- [ ] Tower shadows, stone bases, Rapid barrels, and the Longbow string are clear.
++      Check all three aiming directions, muzzle flashes, previews and inspection.
++- [ ] Resize the window smaller/larger. Check pixel clarity, labels, click targets,
++      map boundaries, sidebar stats and the two-column help panel.
++- [ ] FPS and the development label appear only in development.
++- [ ] Restart during movement, hit/death/escape effects and enabled audio. Repeat
++      ten times and switch chapters. Check no duplicate listeners, enemies,
++      flashes or tones, and no old objects or extra beacon animations.
++- [ ] Test victory/defeat, NEXT LEVEL, help/menu blocking, held B/N/R/H keys,
++      audio mute/unmute and tab switching. Inspect the browser console for errors.
++
++The beacon has one ambient alpha tween per scene. It can continue behind menus
++and the result overlay. Enemy walking uses traveled distance and creates no
++timers or ongoing tweens. Both are presentation only.
++
++## Campaign and tower comparison
++
++Use these zero-based empty-ground tiles. Place eight towers before starting and
++do not add towers during the match. For each chapter, repeat once with all Basic,
++once with all Rapid, and once with all Longbow. Start every wave manually and
++wait for every enemy to die or escape. These layouts compare the same positions;
++they are not intended as optimal strategies or a promise that every type wins.
++
++| Chapter | Eight tower tiles |
++| --- | --- |
++| Border Watch | (0,2) (1,2) (2,2) (3,2) (0,4) (1,4) (2,4) (4,3) |
++| Whispering Grove | (1,2) (3,2) (4,2) (6,2) (7,3) (6,5) (8,5) (9,5) |
++| Dawn Keep | (0,5) (2,5) (4,5) (2,2) (4,2) (7,2) (8,4) (10,4) |
++
++| Chapter | Towers | Lives after waves 1 / 2 / 3 | Kills / result | Observations |
++| --- | --- | --- | --- | --- |
++| Border Watch | Basic | pending | pending | Baseline regression |
++| Border Watch | Rapid | pending | pending | Short range and fast cadence |
++| Border Watch | Longbow | pending | pending | Range versus slower cadence |
++| Whispering Grove | Basic | pending | pending | Runner overtaking, Guard introduction |
++| Whispering Grove | Rapid | pending | pending | Short-range coverage gaps |
++| Whispering Grove | Longbow | pending | pending | Damage and wasted finishing shots |
++| Dawn Keep | Basic | pending | pending | Mixed formations and late Guards |
++| Dawn Keep | Rapid | pending | pending | Guard damage in short windows |
++| Dawn Keep | Longbow | pending | pending | Long approach coverage |
++
++Border Watch/Basic should retain the previously recorded 25 kills and 10 lives.
++Compare the nine runs before proposing stat or wave changes. Record leaks,
++overkill, readability, and cases where one option is consistently stronger.
++M14 does not adjust balance without observations from these runs.
++
++During separate diagnostic runs, verify a full-health Runner takes one Longbow
++hit and a Guard takes four; Rapid fires one projectile per shot. Under CPU
++throttling, check exact 5/8/12 spawns, original-target damage, and waiting for slow
++Guards before the next wave. Finish with a mixed-tower run on each chapter.
+diff --git a/src/scenes/drawTerrain.ts b/src/scenes/drawTerrain.ts
+new file mode 100644
+--- /dev/null
++++ b/src/scenes/drawTerrain.ts
+@@ -0,0 +1,76 @@
++import type Phaser from 'phaser';
++import { COLS, ROWS, TILE } from '../config/gameConfig';
++import type { LevelDefinition } from '../data/levels';
++
++export function drawTerrain(scene: Phaser.Scene, level: LevelDefinition): void {
++  const colors = level.colors;
++  const path = new Set(level.path.map(({ x, y }) => `${x},${y}`));
++  const forest = level.id === 'whispering-grove';
++  const ruins = level.id === 'dawn-keep';
++  const graphics = scene.add.graphics();
++
++  for (let y = 0; y < ROWS; y++) {
++    for (let x = 0; x < COLS; x++) {
++      const px = x * TILE;
++      const py = y * TILE;
++      const isPath = path.has(`${x},${y}`);
++      const seed = x * 17 + y * 23;
++      graphics
++        .fillStyle(isPath ? colors.path : colors.grass[(x + y) % 2])
++        .fillRect(px, py, TILE, TILE)
++        .lineStyle(1, isPath ? colors.pathEdge : colors.grassEdge, 0.55)
++        .strokeRect(px, py, TILE, TILE);
++
++      if (isPath) {
++        // Edge strips follow the route's outline, never crossing connected tiles.
++        graphics.fillStyle(colors.pathEdge, 0.5);
++        if (!path.has(`${x},${y - 1}`)) graphics.fillRect(px, py, TILE, 4);
++        if (!path.has(`${x},${y + 1}`)) graphics.fillRect(px, py + TILE - 4, TILE, 4);
++        if (!path.has(`${x - 1},${y}`)) graphics.fillRect(px, py, 4, TILE);
++        if (!path.has(`${x + 1},${y}`)) graphics.fillRect(px + TILE - 4, py, 4, TILE);
++        graphics
++          .fillStyle(colors.pathEdge, 0.65)
++          .fillRect(px + 13, py + 44, 5, 2)
++          .fillRect(px + 47, py + 19, 3, 3);
++        continue;
++      }
++
++      // Flat details sit near tile corners; every empty ground tile stays buildable.
++      graphics
++        .fillStyle(colors.grassDark, 0.65)
++        .fillRect(px + 7, py + 51, 12, 3)
++        .fillStyle(colors.grassLight, 0.7)
++        .fillRect(px + 10, py + 47, 2, 5)
++        .fillRect(px + 15, py + 49, 2, 4);
++
++      if (forest && seed % 3 === 0) {
++        graphics
++          .fillStyle(colors.grassDark)
++          .fillRect(px + 48, py + 7, 3, 14)
++          .fillRect(px + 43, py + 10, 13, 3)
++          .fillRect(px + 45, py + 16, 9, 3)
++          .fillStyle(colors.grassLight)
++          .fillRect(px + 48, py + 7, 2, 7)
++          .fillStyle(0xc7b2db)
++          .fillRect(px + 8, py + 48, 5, 3);
++      } else if (ruins && seed % 3 === 0) {
++        graphics
++          .fillStyle(colors.grassDark)
++          .fillRect(px + 44, py + 10, 13, 7)
++          .fillStyle(colors.grassLight)
++          .fillRect(px + 44, py + 8, 8, 5)
++          .fillRect(px + 53, py + 12, 4, 3)
++          .fillStyle(colors.grassDark)
++          .fillRect(px + 48, py + 8, 1, 3);
++      } else if (!forest && !ruins && seed % 4 === 0) {
++        graphics
++          .fillStyle(colors.grassDark)
++          .fillRect(px + 47, py + 10, 2, 11)
++          .fillRect(px + 53, py + 13, 2, 8)
++          .fillStyle(0xe8d28b)
++          .fillRect(px + 45, py + 9, 6, 3)
++          .fillRect(px + 51, py + 12, 6, 3);
++      }
++    }
++  }
++}
+diff --git a/src/tests/EnemyPresentation.test.ts b/src/tests/EnemyPresentation.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/tests/EnemyPresentation.test.ts
+@@ -0,0 +1,125 @@
++import type Phaser from 'phaser';
++import { describe, expect, it, vi } from 'vitest';
++import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
++import { Enemy } from '../entities/Enemy';
++
++vi.mock('phaser', () => ({ default: {} }));
++
++class DisplayStub {
++  scaleX = 1;
++  scaleY = 1;
++  alpha = 1;
++  destroyed = false;
++
++  constructor(
++    public x: number,
++    public y: number,
++    readonly children: DisplayStub[] = [],
++  ) {}
++
++  setStrokeStyle() { return this; }
++  setOrigin() { return this; }
++  setDepth() { return this; }
++  setAlpha(alpha: number) { this.alpha = alpha; return this; }
++  setPosition(x: number, y: number) { this.x = x; this.y = y; return this; }
++  setY(y: number) { this.y = y; return this; }
++  setScale(x: number, y: number) { this.scaleX = x; this.scaleY = y; return this; }
++  destroy() {
++    this.destroyed = true;
++    this.children.forEach((child) => child.destroy());
++  }
++}
++
++function createScene() {
++  const containers: DisplayStub[] = [];
++  const shape = (x: number, y: number) => new DisplayStub(x, y);
++  const tweens = { killTweensOf: vi.fn(), add: vi.fn() };
++  const scene = {
++    add: {
++      rectangle: shape,
++      ellipse: shape,
++      polygon: shape,
++      text: shape,
++      container(x: number, y: number, children: DisplayStub[]) {
++        const container = new DisplayStub(x, y, children);
++        containers.push(container);
++        return container;
++      },
++    },
++    tweens,
++  } as unknown as Phaser.Scene;
++  return { scene, containers, tweens };
++}
++
++const path = [{ x: 32, y: 32 }, { x: 160, y: 32 }, { x: 160, y: 224 }];
++
++describe('Enemy presentation keeps combat coordinates stable', () => {
++  for (const kind of Object.keys(ENEMY_TYPES) as EnemyKind[]) {
++    it(`${kind} moves its root and target together with anchored HP and shadow`, () => {
++      const { scene, containers } = createScene();
++      const enemy = new Enemy(scene, path, kind);
++      const root = containers[1];
++      const [shadow, figure, healthBackground, healthBar] = root.children;
++      const barY = healthBar.y;
++      const shadowY = shadow.y;
++
++      enemy.update(250);
++
++      const distance = ENEMY_TYPES[kind].speed / 4;
++      expect(enemy.target.position).toEqual({ x: 32 + distance, y: 32 });
++      expect(enemy.target.progress).toBe(distance);
++      expect({ x: root.x, y: root.y }).toEqual(enemy.target.position);
++      expect(enemy.target.health).toBe(ENEMY_TYPES[kind].maxHealth);
++      expect(Math.abs(figure.y)).toBeLessThanOrEqual(1);
++      expect(shadow.y).toBe(shadowY);
++      expect(healthBackground.y).toBe(barY);
++      expect(healthBar.y).toBe(barY);
++    });
++  }
++
++  it('keeps the Guard HP bar anchored and normalized after damage while walking', () => {
++    const { scene, containers, tweens } = createScene();
++    const enemy = new Enemy(scene, path, 'guard');
++    const healthBar = containers[1].children[3];
++    const barY = healthBar.y;
++    enemy.update(128);
++    enemy.target.health -= 2;
++
++    expect(enemy.refreshHealthBar()).toBe(true);
++    expect(healthBar.scaleX).toBe(5 / 7);
++    expect(healthBar.scaleY).toBe(1);
++    expect(healthBar.y).toBe(barY);
++    expect(tweens.add).toHaveBeenCalledOnce();
++    expect(enemy.refreshHealthBar()).toBe(false);
++  });
++
++  it('keeps exact corner and exit coordinates through long frames', () => {
++    const { scene, containers } = createScene();
++    const enemy = new Enemy(scene, path, 'runner');
++    enemy.update(1000);
++    expect(enemy.target.position).toEqual({ x: 160, y: 44 });
++    expect(enemy.target.progress).toBe(140);
++    expect(enemy.finished).toBe(false);
++
++    enemy.update(2000);
++    expect(enemy.target.position).toEqual(path[2]);
++    expect(enemy.target.progress).toBe(320);
++    expect(enemy.finished).toBe(true);
++    expect({ x: containers[1].x, y: containers[1].y }).toEqual(path[2]);
++  });
++
++  it('destroys the figure and shadow together and invalidates the original target', () => {
++    const { scene, containers, tweens } = createScene();
++    const enemy = new Enemy(scene, path, 'guard');
++    enemy.target.health--;
++    enemy.refreshHealthBar();
++    const flash = tweens.add.mock.calls[0][0].targets;
++
++    enemy.destroy();
++
++    expect(enemy.target.health).toBe(0);
++    expect(tweens.killTweensOf).toHaveBeenLastCalledWith(flash);
++    expect(containers[1].destroyed).toBe(true);
++    expect(containers[1].children.every((child) => child.destroyed)).toBe(true);
++  });
++});

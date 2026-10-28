@@ -1,0 +1,361 @@
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# Mini Tower Defense — Milestone 5
++# Mini Tower Defense — Milestone 6
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -29,6 +29,15 @@
+    next wave manually.
+ 6. Click **RESTART** at any time to reset the entire match.
+ 
++Outside build mode, left-click a built tower's tile to inspect its range and
++combat stats. The blue range circle stays visible as you move the pointer and is
++clipped to the map. Click another tower to switch, or click a map tile without a
++tower or press **Esc** to close. Starting build mode also closes inspection.
++Inspection is disabled after victory/defeat and resets on Restart.
++
++The path has **IN** and **OUT** labels, plus arrows pointing along the outgoing
++path at each turn. These ground markings render below towers and enemies.
++
+ Sidebar/footer clicks never place towers. Placement is allowed before and during
+ waves, and stops after victory/defeat, when the tower button shows **BUILD LOCKED**.
+ Towers have no cost. Progress and placement are not saved.
+@@ -108,8 +117,21 @@
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 5 verification status
++### Milestone 6 verification status
+ 
++M6 adds tower inspection and path guides. Range and combat stats use the existing
++combat constants. Build mode keeps its placement behavior, including rejection of
++occupied tiles. Escape after a result preserves the locked button and match text.
++No dependencies, combat rules, wave rules, or system logic were changed.
++
++- `npm run test` and `npm run build` were attempted after M6 integration. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. M6 test/build success is not yet confirmed.
++- Source review covered input routing, map clipping, draw order, and scene cleanup.
++  Browser checks of inspection, guides, resizing, and repeated Restart are pending.
++
++### Milestone 5 verification status (previously recorded)
++
+ M5 changes presentation only: range preview, button states, and result statistics.
+ No dependencies, combat settings, wave rules, or system logic were changed.
+ 
+@@ -150,6 +172,16 @@
+       stay inside the map and disappear on Esc, pointer exit, and match end.
+ - [ ] Check BASIC TOWER / CANCEL BUILD / BUILD LOCKED states and the dimmed,
+       disabled wave button during play and after the result.
++- [ ] Outside build mode, click a built tower and confirm the blue range circle
++      and stats match 128px / 1s / 1 DMG without changing the tower count.
++- [ ] Move the pointer and click another tower; only the selected tower's range
++      should remain. Check map clipping on edge and corner towers after resizing.
++- [ ] Click grass/path without a tower or press Esc to close inspection. Sidebar
++      and footer clicks should not select towers or change the tower count.
++- [ ] Enter build mode while inspecting a tower; inspection must close and an
++      occupied tile must still reject placement rather than select the tower.
++- [ ] Check IN / OUT labels and arrows at every turn; enemies and HP bars must
++      remain visible above the markings.
+ - [ ] Verify no enemies appear before Start Wave.
+ - [ ] Watch several enemies move simultaneously with individual HP bars.
+ - [ ] Check that towers prioritize enemies further along the path when in range.
+@@ -159,9 +191,11 @@
+ - [ ] Play through defeat without towers and check one lost life per escape.
+ - [ ] Compare the result panel's wave, kills, lives, and towers with the sidebar.
+ - [ ] Check that placement and Start Wave stop after the result.
++- [ ] Finish a match while inspecting a tower; its range must disappear. Press
++      Esc after the result and confirm BUILD LOCKED and match text stay intact.
+ - [ ] Restart during play and after each outcome; confirm full state reset.
+ - [ ] After Restart, confirm BASIC TOWER and START WAVE 1 are available and
+-      there is no range preview or previous result panel.
++      there is no range preview, tower inspection, or previous result panel.
+ - [ ] Repeat in production preview; confirm no FPS/development label.
+ - [ ] Confirm there are no browser console errors.
+ 
+@@ -180,11 +214,14 @@
+ M5 adds a map-clipped range preview, explicit build/wave button states, Restart
+ hover feedback, and match statistics on the result panel. The preview uses the
+ existing combat range constant, and statistics use the existing match state.
++M6 adds inspection of built towers and path entry/exit/turn guides. The small
++`src/scenes/drawPathGuides.ts` renderer keeps static ground markings separate from
++scene input and combat orchestration; scene shutdown owns its display objects.
+ Economy, upgrades, selling, and multiple enemy types remain out of scope.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 build verification is pending as described above.
++M5 and M6 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -1,5 +1,9 @@
+ import Phaser from 'phaser';
+-import { TOWER_RANGE } from '../config/combatConfig';
++import {
++  TOWER_DAMAGE,
++  TOWER_FIRE_INTERVAL,
++  TOWER_RANGE,
++} from '../config/combatConfig';
+ import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+ import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+ import { PATH_TILES, type Point } from '../data/map';
+@@ -8,6 +12,7 @@
+ import { Tower } from '../entities/Tower';
+ import { TowerPlacement } from '../systems/TowerPlacement';
+ import { WaveSystem } from '../systems/WaveSystem';
++import { drawPathGuides } from './drawPathGuides';
+ 
+ export class GameScene extends Phaser.Scene {
+   private enemies: Enemy[] = [];
+@@ -20,6 +25,7 @@
+   private fpsText?: Phaser.GameObjects.Text;
+   private placement!: TowerPlacement;
+   private placementPreview!: Phaser.GameObjects.Graphics;
++  private towerInspection!: Phaser.GameObjects.Graphics;
+   private towerButton!: Phaser.GameObjects.Text;
+   private placementText!: Phaser.GameObjects.Text;
+   private towerCountText!: Phaser.GameObjects.Text;
+@@ -39,21 +45,22 @@
+     this.fpsText = undefined;
+ 
+     this.drawMap();
++    drawPathGuides(this);
+     this.createHud();
+     this.createPlacementControls();
+     this.createMatchControls();
+     this.refreshHud();
+ 
+     this.input.on('pointermove', this.updatePlacementPreview, this);
+-    this.input.on('pointerdown', this.placeTower, this);
++    this.input.on('pointerdown', this.handleMapPointerDown, this);
+     this.input.on('gameout', this.hidePlacementPreview, this);
+-    this.input.keyboard?.on('keydown-ESC', this.cancelPlacement, this);
++    this.input.keyboard?.on('keydown-ESC', this.cancelSelection, this);
+ 
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+       this.input.off('pointermove', this.updatePlacementPreview, this);
+-      this.input.off('pointerdown', this.placeTower, this);
++      this.input.off('pointerdown', this.handleMapPointerDown, this);
+       this.input.off('gameout', this.hidePlacementPreview, this);
+-      this.input.keyboard?.off('keydown-ESC', this.cancelPlacement, this);
++      this.input.keyboard?.off('keydown-ESC', this.cancelSelection, this);
+     });
+   }
+ 
+@@ -97,7 +104,7 @@
+       fontSize: '17px',
+       color: '#f5e6ae',
+     });
+-    this.add.text(786, 68, 'MILESTONE 5', {
++    this.add.text(786, 68, 'MILESTONE 6', {
+       fontFamily: 'monospace',
+       fontSize: '14px',
+       color: '#b4d9bc',
+@@ -118,11 +125,16 @@
+       fontSize: '18px',
+       color: '#e6e6e6',
+     });
+-    this.add.text(24, 580, 'Select a tower, then click grass. Esc cancels.', {
+-      fontFamily: 'monospace',
+-      fontSize: '13px',
+-      color: '#aab7bd',
+-    });
++    this.add.text(
++      24,
++      580,
++      'BASIC TOWER builds. Click built towers to inspect. Esc closes.',
++      {
++        fontFamily: 'monospace',
++        fontSize: '13px',
++        color: '#aab7bd',
++      },
++    );
+     this.phaseText = this.add.text(24, 610, '', {
+       fontFamily: 'monospace',
+       fontSize: '13px',
+@@ -159,6 +171,7 @@
+       if (this.towerSelected) {
+         this.cancelPlacement();
+       } else {
++        this.clearTowerInspection();
+         this.towerSelected = true;
+         this.towerButton
+           .setText('CANCEL BUILD')
+@@ -167,11 +180,16 @@
+       }
+     });
+ 
+-    this.add.text(786, 266, '128px / 1s / 1 DMG', {
+-      fontFamily: 'monospace',
+-      fontSize: '12px',
+-      color: '#b4d9bc',
+-    });
++    this.add.text(
++      786,
++      266,
++      `${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG`,
++      {
++        fontFamily: 'monospace',
++        fontSize: '12px',
++        color: '#b4d9bc',
++      },
++    );
+     this.placementText = this.add.text(786, 300, 'Select BASIC TOWER\nto start building.', {
+       fontFamily: 'monospace',
+       fontSize: '13px',
+@@ -185,11 +203,13 @@
+       color: '#b9e8f5',
+     });
+     this.placementPreview = this.add.graphics().setDepth(10);
++    this.towerInspection = this.add.graphics().setDepth(0.75);
+     // Keep the range circle inside the map, away from the sidebar and footer.
+     const mapMask = this.add.graphics().setVisible(false);
+     mapMask.fillStyle(0xffffff).fillRect(0, 0, COLS * TILE, ROWS * TILE);
+     const previewMask = mapMask.createGeometryMask();
+     this.placementPreview.setMask(previewMask);
++    this.towerInspection.setMask(previewMask);
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
+   }
+ 
+@@ -233,6 +253,18 @@
+     this.placementPreview.clear();
+   }
+ 
++  private clearTowerInspection(): void {
++    this.towerInspection.clear();
++  }
++
++  private cancelSelection(): void {
++    this.clearTowerInspection();
++
++    if (!this.waves.finished) {
++      this.cancelPlacement();
++    }
++  }
++
+   private cancelPlacement(): void {
+     this.towerSelected = false;
+     this.towerButton
+@@ -242,6 +274,44 @@
+     this.hidePlacementPreview();
+   }
+ 
++  private handleMapPointerDown(pointer: Phaser.Input.Pointer): void {
++    if (this.waves.finished || !pointer.leftButtonDown()) {
++      return;
++    }
++
++    if (this.towerSelected) {
++      this.placeTower(pointer);
++      return;
++    }
++
++    const tile = this.pointerTile(pointer);
++
++    if (this.placement.getStatus(tile) === 'outside-map') {
++      return;
++    }
++
++    this.cancelSelection();
++    const tower = this.towers.find(
++      (candidate) =>
++        candidate.x === (tile.x + 0.5) * TILE &&
++        candidate.y === (tile.y + 0.5) * TILE,
++    );
++
++    if (!tower) {
++      return;
++    }
++
++    this.towerInspection
++      .fillStyle(0x7eddf5, 0.08)
++      .fillCircle(tower.x, tower.y, TOWER_RANGE)
++      .lineStyle(2, 0x7eddf5, 0.9)
++      .strokeCircle(tower.x, tower.y, TOWER_RANGE)
++      .strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
++    this.placementText.setText(
++      `BASIC TOWER\n${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG\nEsc to close.`,
++    );
++  }
++
+   private placeTower(pointer: Phaser.Input.Pointer): void {
+     if (!this.towerSelected || this.waves.finished || !pointer.leftButtonDown()) {
+       return;
+@@ -340,6 +410,7 @@
+ 
+     this.enemies = [];
+     this.cancelPlacement();
++    this.clearTowerInspection();
+     this.towerButton
+       .setText('BUILD LOCKED')
+       .setAlpha(0.55)
+diff --git a/src/scenes/drawPathGuides.ts b/src/scenes/drawPathGuides.ts
+new file mode 100644
+--- /dev/null
++++ b/src/scenes/drawPathGuides.ts
+@@ -0,0 +1,58 @@
++import type Phaser from 'phaser';
++import { TILE } from '../config/gameConfig';
++import { PATH_TILES } from '../data/map';
++
++export function drawPathGuides(scene: Phaser.Scene): void {
++  // Ground markings stay below towers and enemies.
++  const graphics = scene.add.graphics().setDepth(0.5);
++
++  for (let index = 1; index < PATH_TILES.length - 1; index++) {
++    const previous = PATH_TILES[index - 1];
++    const current = PATH_TILES[index];
++    const next = PATH_TILES[index + 1];
++    const dx = next.x - current.x;
++    const dy = next.y - current.y;
++
++    if (current.x - previous.x === dx && current.y - previous.y === dy) {
++      continue;
++    }
++
++    const x = (current.x + 0.5) * TILE;
++    const y = (current.y + 0.5) * TILE;
++
++    graphics
++      .lineStyle(2, 0x684627, 0.8)
++      .beginPath()
++      .moveTo(x - dx * 4 - dy * 5, y - dy * 4 + dx * 5)
++      .lineTo(x + dx * 6, y + dy * 6)
++      .lineTo(x - dx * 4 + dy * 5, y - dy * 4 - dx * 5)
++      .strokePath();
++  }
++
++  const endpoints = [
++    { tile: PATH_TILES[0], label: 'IN', color: 0x236044, textColor: '#d7ffe1' },
++    {
++      tile: PATH_TILES[PATH_TILES.length - 1],
++      label: 'OUT',
++      color: 0x873d34,
++      textColor: '#ffe1d8',
++    },
++  ];
++
++  for (const { tile, label, color, textColor } of endpoints) {
++    graphics
++      .lineStyle(2, color)
++      .strokeRect(tile.x * TILE + 4, tile.y * TILE + 4, TILE - 8, TILE - 8);
++
++    scene.add
++      .text((tile.x + 0.5) * TILE, tile.y * TILE + 6, label, {
++        fontFamily: 'monospace',
++        fontSize: '11px',
++        color: textColor,
++        backgroundColor: `#${color.toString(16).padStart(6, '0')}`,
++        padding: { x: 3, y: 1 },
++      })
++      .setOrigin(0.5, 0)
++      .setDepth(0.5);
++  }
++}

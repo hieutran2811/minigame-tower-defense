@@ -1,0 +1,455 @@
+{
+  "mode": "built-in",
+  "phase": "Historical equal-grid Goblin trials before approved atlas metadata correction",
+  "supersededBy": "atlas-generation-log.json",
+  "milestone": "M17 in progress",
+  "runtimeAssetsActivated": false,
+  "selectedReviewDestination": "docs/art/m17/goblin-raider-candidate.png",
+  "savedByUserAndViewedInWorkspace": true,
+  "stopLoss": "Three generation/edit calls; no fourth attempt for the same sprite geometry issue.",
+  "calls": [
+    {
+      "id": "original",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: stylized-concept.\nAsset type: production 2D tower-defense character animation PNG sheet, not a concept poster.\nPrimary request: Goblin Raider, one consistent character repeated in exactly 24 animation frames. Small hunched moss-green goblin with large pointed ears, yellow eyes, crooked teeth, a ragged deep-purple hood and tunic, brown leather belt and loot pouch, a chipped steel knife in the right hand. Exactly match the top-left GOBLIN identity of the approved M16 concept board. Short sturdy legs; readable purple triangular cloth silhouette.\nReference: use the recent image only for hand-painted fantasy style and character identity. Ignore its parchment, labels, towers, terrain and composition. Camera is three-quarter overhead, about 35 degrees down; characters stay upright on the screen. Light is fixed from upper left in every direction, even rear views.\nOutput geometry: landscape image exactly 1536 x 1024, SIX columns and FOUR rows of equal 256 x 256 cells, with no visible dividers. Each cell origin is (column*256,row*256). No gutters, no outer frame, no labels or numbers. Cells must remain rigorously aligned so Phaser can slice a regular sheet.\nBackground: genuinely transparent RGBA alpha. No checkerboard painted into the image, no parchment, no ground tiles, no scenery, no ground shadow or contact ellipse. Only the character in each cell; empty padding stays fully transparent.\nPivot and scale: standing ground-contact point is local (128,192) in EVERY cell. Head-to-feet body height about 160px. Keep all anatomy, weapon tips, ears and cloth within local x=20..236 and y=8..236; do not crop any frame. Keep the same body proportions and scale across all frames and directions. Leg motion uses the same anchored contact plane, no camera bob or sprite translation.\nExact cell order, zero-based columns:\nROW 0: character facing NORTH, showing the back. Columns 0..4 are idle, walk A (left step), walk B (passing), walk C (right step), walk D (passing). Column 5 is death frame 1: stagger, FRONT/SOUTH view.\nROW 1: character facing EAST, showing the right-facing three-quarter profile. Columns 0..4 are idle, walk A, walk B, walk C, walk D. Column 5 is death frame 2: knees buckle, same FRONT/SOUTH view.\nROW 2: character facing SOUTH, showing the face. Columns 0..4 are idle, walk A, walk B, walk C, walk D. Column 5 is death frame 3: falling sideways, same FRONT/SOUTH view.\nROW 3: character facing WEST, showing the left-facing three-quarter profile. Columns 0..4 are idle, walk A, walk B, walk C, walk D. Column 5 is death frame 4: collapsed and still, same FRONT/SOUTH view.\nDeath is non-graphic: no gore, no blood; preserve color and scale, fall around the same feet pivot. Walking frames form a smooth repeating A-B-C-D cycle, with opposite arm/leg motion and small cloth follow-through.\nStyle/medium: polished hand-painted 2D fantasy game sprite with readable material planes, a dark soft contour, warm upper-left highlights, restrained detail and distinct skin/leather/metal. Readable at a 64px display cell (body around 40px high). Do not use procedural geometric placeholders or pixel art.\nAvoid: extra characters in a cell, duplicate rows, missing cells, eight-direction substitutions, pose labels, guides, UI, text, watermarks, black/white background, baked shadows, side views where a rear view is required. Deliver the actual transparent sprite sheet.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-8da16130-408f-4b84-afbd-e27d753ff235.png",
+      "selectedForReview": true,
+      "productionAccepted": false,
+      "review": "24 pose có alpha; một số pose chạm/tràn ô 256px và feet không theo pivot yêu cầu.",
+      "inspection": {
+        "width": 1536,
+        "height": 1024,
+        "byteSize": 2418513,
+        "transparent": 938200,
+        "opaque": 0,
+        "partial": 634664,
+        "transparentPercent": 59.65,
+        "frames": [
+          {
+            "frame": 0,
+            "minX": 62,
+            "minY": 53,
+            "maxX": 240,
+            "maxY": 255,
+            "pixels": 18654
+          },
+          {
+            "frame": 1,
+            "minX": 56,
+            "minY": 49,
+            "maxX": 244,
+            "maxY": 254,
+            "pixels": 18345
+          },
+          {
+            "frame": 2,
+            "minX": 61,
+            "minY": 51,
+            "maxX": 239,
+            "maxY": 255,
+            "pixels": 18240
+          },
+          {
+            "frame": 3,
+            "minX": 56,
+            "minY": 49,
+            "maxX": 228,
+            "maxY": 255,
+            "pixels": 18363
+          },
+          {
+            "frame": 4,
+            "minX": 50,
+            "minY": 51,
+            "maxX": 234,
+            "maxY": 255,
+            "pixels": 18777
+          },
+          {
+            "frame": 5,
+            "minX": 22,
+            "minY": 59,
+            "maxX": 229,
+            "maxY": 255,
+            "pixels": 21490
+          },
+          {
+            "frame": 6,
+            "minX": 58,
+            "minY": 51,
+            "maxX": 249,
+            "maxY": 245,
+            "pixels": 20230
+          },
+          {
+            "frame": 7,
+            "minX": 63,
+            "minY": 50,
+            "maxX": 255,
+            "maxY": 246,
+            "pixels": 20113
+          },
+          {
+            "frame": 8,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 246,
+            "pixels": 20312
+          },
+          {
+            "frame": 9,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 245,
+            "pixels": 20634
+          },
+          {
+            "frame": 10,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 245,
+            "pixels": 20401
+          },
+          {
+            "frame": 11,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 230,
+            "maxY": 242,
+            "pixels": 19963
+          },
+          {
+            "frame": 12,
+            "minX": 35,
+            "minY": 27,
+            "maxX": 221,
+            "maxY": 227,
+            "pixels": 18969
+          },
+          {
+            "frame": 13,
+            "minX": 35,
+            "minY": 24,
+            "maxX": 224,
+            "maxY": 230,
+            "pixels": 18910
+          },
+          {
+            "frame": 14,
+            "minX": 41,
+            "minY": 24,
+            "maxX": 225,
+            "maxY": 228,
+            "pixels": 18723
+          },
+          {
+            "frame": 15,
+            "minX": 43,
+            "minY": 22,
+            "maxX": 234,
+            "maxY": 232,
+            "pixels": 19116
+          },
+          {
+            "frame": 16,
+            "minX": 41,
+            "minY": 22,
+            "maxX": 237,
+            "maxY": 231,
+            "pixels": 19444
+          },
+          {
+            "frame": 17,
+            "minX": 21,
+            "minY": 52,
+            "maxX": 242,
+            "maxY": 228,
+            "pixels": 20134
+          },
+          {
+            "frame": 18,
+            "minX": 35,
+            "minY": 10,
+            "maxX": 235,
+            "maxY": 203,
+            "pixels": 20171
+          },
+          {
+            "frame": 19,
+            "minX": 22,
+            "minY": 5,
+            "maxX": 223,
+            "maxY": 201,
+            "pixels": 20722
+          },
+          {
+            "frame": 20,
+            "minX": 30,
+            "minY": 7,
+            "maxX": 230,
+            "maxY": 202,
+            "pixels": 21151
+          },
+          {
+            "frame": 21,
+            "minX": 32,
+            "minY": 6,
+            "maxX": 238,
+            "maxY": 199,
+            "pixels": 20774
+          },
+          {
+            "frame": 22,
+            "minX": 28,
+            "minY": 5,
+            "maxX": 231,
+            "maxY": 202,
+            "pixels": 21205
+          },
+          {
+            "frame": 23,
+            "minX": 4,
+            "minY": 93,
+            "maxX": 241,
+            "maxY": 209,
+            "pixels": 17054
+          }
+        ]
+      }
+    },
+    {
+      "id": "alpha-correction",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: background-extraction. Edit target: the most recent Goblin Raider 24-frame sprite sheet. Remove ONLY the entire brown/gray/purple backdrop from the whole sheet. Every pixel outside the 24 character silhouettes, including every gap between limbs, blades, ears and cloth, must become genuinely transparent alpha=0. There must be no painted background, gradient, halo, checkerboard, shadow, or backdrop color remaining. Preserve the goblin character artwork, identity, every pose, original positions, source scale, exact 1536x1024 dimensions, and original six-column/four-row cell layout. Keep all 24 characters intact, including weapon tips and ears. Keep antialiased semitransparent edge pixels clean without brown matte contamination. Return an actual transparent RGBA PNG sprite sheet, not a mockup of transparency. Do not add labels, guides, margins or new sprites. This is a background-only correction; do not redraw or rearrange any character.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-5a803854-ff03-4e18-ae90-18ae91ae27de.png",
+      "selectedForReview": false,
+      "productionAccepted": false,
+      "review": "Alpha đã có từ bản đầu; chỉnh nền không sửa hình học. Không dùng bản này.",
+      "inspection": {
+        "width": 1536,
+        "height": 1024,
+        "byteSize": 2482102,
+        "transparent": 920716,
+        "opaque": 0,
+        "partial": 652148,
+        "transparentPercent": 58.54,
+        "frames": [
+          {
+            "frame": 0,
+            "minX": 61,
+            "minY": 54,
+            "maxX": 241,
+            "maxY": 255,
+            "pixels": 19268
+          },
+          {
+            "frame": 1,
+            "minX": 56,
+            "minY": 49,
+            "maxX": 244,
+            "maxY": 255,
+            "pixels": 18935
+          },
+          {
+            "frame": 2,
+            "minX": 61,
+            "minY": 52,
+            "maxX": 240,
+            "maxY": 255,
+            "pixels": 18850
+          },
+          {
+            "frame": 3,
+            "minX": 55,
+            "minY": 49,
+            "maxX": 228,
+            "maxY": 255,
+            "pixels": 18778
+          },
+          {
+            "frame": 4,
+            "minX": 48,
+            "minY": 51,
+            "maxX": 235,
+            "maxY": 255,
+            "pixels": 19313
+          },
+          {
+            "frame": 5,
+            "minX": 22,
+            "minY": 59,
+            "maxX": 231,
+            "maxY": 255,
+            "pixels": 22026
+          },
+          {
+            "frame": 6,
+            "minX": 57,
+            "minY": 0,
+            "maxX": 250,
+            "maxY": 247,
+            "pixels": 20905
+          },
+          {
+            "frame": 7,
+            "minX": 62,
+            "minY": 50,
+            "maxX": 255,
+            "maxY": 248,
+            "pixels": 20739
+          },
+          {
+            "frame": 8,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 248,
+            "pixels": 21037
+          },
+          {
+            "frame": 9,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 247,
+            "pixels": 21389
+          },
+          {
+            "frame": 10,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 255,
+            "maxY": 247,
+            "pixels": 21358
+          },
+          {
+            "frame": 11,
+            "minX": 0,
+            "minY": 0,
+            "maxX": 231,
+            "maxY": 243,
+            "pixels": 20599
+          },
+          {
+            "frame": 12,
+            "minX": 35,
+            "minY": 28,
+            "maxX": 222,
+            "maxY": 228,
+            "pixels": 19600
+          },
+          {
+            "frame": 13,
+            "minX": 35,
+            "minY": 24,
+            "maxX": 226,
+            "maxY": 231,
+            "pixels": 19452
+          },
+          {
+            "frame": 14,
+            "minX": 41,
+            "minY": 25,
+            "maxX": 228,
+            "maxY": 229,
+            "pixels": 19254
+          },
+          {
+            "frame": 15,
+            "minX": 44,
+            "minY": 23,
+            "maxX": 237,
+            "maxY": 233,
+            "pixels": 19765
+          },
+          {
+            "frame": 16,
+            "minX": 42,
+            "minY": 23,
+            "maxX": 239,
+            "maxY": 232,
+            "pixels": 20030
+          },
+          {
+            "frame": 17,
+            "minX": 21,
+            "minY": 52,
+            "maxX": 243,
+            "maxY": 230,
+            "pixels": 20616
+          },
+          {
+            "frame": 18,
+            "minX": 35,
+            "minY": 11,
+            "maxX": 237,
+            "maxY": 205,
+            "pixels": 20866
+          },
+          {
+            "frame": 19,
+            "minX": 22,
+            "minY": 5,
+            "maxX": 225,
+            "maxY": 202,
+            "pixels": 21343
+          },
+          {
+            "frame": 20,
+            "minX": 30,
+            "minY": 8,
+            "maxX": 232,
+            "maxY": 203,
+            "pixels": 21941
+          },
+          {
+            "frame": 21,
+            "minX": 32,
+            "minY": 6,
+            "maxX": 240,
+            "maxY": 201,
+            "pixels": 21538
+          },
+          {
+            "frame": 22,
+            "minX": 28,
+            "minY": 5,
+            "maxX": 233,
+            "maxY": 203,
+            "pixels": 21988
+          },
+          {
+            "frame": 23,
+            "minX": 3,
+            "minY": 93,
+            "maxX": 242,
+            "maxY": 210,
+            "pixels": 17553
+          }
+        ]
+      }
+    },
+    {
+      "id": "layout-correction",
+      "request": {
+        "prompt": "M17 enemy sprite sheet\nUse case: precise-object-edit. Edit target: the recent transparent Goblin Raider sprite sheet. Correct ONLY sprite placement, spacing and common scale for a strict game-engine grid. Preserve all 24 poses, purple goblin identity, colors, lighting, hand-painted detail, row/column order and true alpha transparency. There is currently sprite spill across the horizontal and vertical cell boundaries; fix that. Do not add or remove poses.\nCanvas EXACTLY 1536x1024, 6 columns x 4 rows, each cell exactly 256x256. Rescale each standing goblin to 160 pixels from head top to grounded boot bottom. Put the standing feet ground-contact point at local (128,192) in every cell. Every character, ears, knife, cloak, hands and feet must fit within local x=24..232 and y=16..224. This leaves a large clear transparent moat around each sprite. No colored/alpha pixels may touch or cross ANY cell edge.\nABSOLUTE ground-contact coordinates for the 24 cells: row 0 x=[128,384,640,896,1152,1408], y=192; row 1 same x values, y=448; row 2 same x values, y=704; row 3 same x values, y=960. Grounded boots must line up at those y values. Top of standing heads should be about 32 pixels below each row top; every row must use equal scale. Death poses in column 5 fall around the same feet pivot and must fit the same safe box without reaching the cell bottom.\nKEEP row 0 back/NORTH idle and 4 walking poses, row 1 right/EAST idle and 4 walking poses, row 2 front/SOUTH idle and 4 walking poses, row 3 left/WEST idle and 4 walking poses. KEEP the four death poses down column 5 in the original order. Keep loopable opposite-leg steps.\nOutput a clean transparent RGBA PNG with fully transparent gaps throughout. Do not draw a checkerboard, backdrop, glow, ground, contact shadow, frame border, grid line, text or labels. This is geometry/padding correction only. The exact equal grid, safe empty padding, common scale and common feet pivot matter more than maximizing the character size.",
+        "transparent_background": true,
+        "num_last_images_to_include": 1
+      },
+      "source": "C:\\Users\\Admin\\.codex\\generated_images\\01a18004-04d2-7f11-80ee-e92c3c314be5\\exec-481f2635-300d-459b-be57-0a1acd9b3189.png",
+      "selectedForReview": false,
+      "productionAccepted": false,
+      "review": "Quan sát vẫn thấy chưa đạt padding/pivot. Dừng tiếp tục sửa cùng vấn đề theo stop-loss.",
+      "inspection": null
+    }
+  ]
+}

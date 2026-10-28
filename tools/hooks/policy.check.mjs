@@ -174,3 +174,44 @@ test('symlink aliases cannot write protected files or read known secret files', 
     value === alias ? path.join(root, '.env') : originalRealpath(value));
   assert.equal(checkCommand('Get-Content src/alias.ts', root, scripts).decision, 'confirm');
 });
+
+test('M16 image generation accepts only the reviewed input shape', () => {
+  const imageEvent = (tool_input) => ({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'image_genimagegen',
+    tool_input,
+  });
+  const base = { prompt: 'M16 concept board', transparent_background: false };
+  const decision = (args) => checkTool(imageEvent(args), root, scripts).decision;
+  const sprite = {
+  prompt: 'M17 enemy sprite sheet\nGoblin Raider, 24 frames',
+  transparent_background: true,
+};
+assert.equal(decision(sprite), 'allow');
+assert.equal(decision({ ...sprite, num_last_images_to_include: 1 }), 'allow');
+assert.equal(decision({ ...sprite, prompt: 'M17 enemy sprite sheet' }), 'confirm');
+assert.equal(decision({ ...sprite, transparent_background: null }), 'confirm');
+assert.equal(decision({ ...sprite, referenced_image_paths: ['outside.png'] }), 'confirm');
+assert.equal(decision({ ...sprite, output_path: 'outside.png' }), 'confirm');
+assert.equal(runHook(imageEvent(sprite)).status, 0);
+
+  assert.equal(decision(base), 'allow');
+  assert.equal(decision({ ...base, num_last_images_to_include: 1 }), 'allow');
+  assert.equal(decision({ ...base, referenced_image_paths: null }), 'allow');
+  for (const args of [
+    { ...base, prompt: '' },
+    { ...base, prompt: 'x'.repeat(12001) },
+    { ...base, transparent_background: true },
+    { ...base, num_last_images_to_include: 2 },
+    { ...base, referenced_image_paths: ['outside.png'] },
+    { ...base, output_path: 'outside.png' },
+  ]) {
+    assert.equal(decision(args), 'confirm');
+  }
+
+  const safe = runHook(imageEvent(base));
+  assert.equal(safe.status, 0);
+  assert.equal(safe.stdout, '');
+  const denied = runHook(imageEvent({ ...base, referenced_image_paths: ['outside.png'] }));
+  assert.equal(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecision, 'deny');
+});

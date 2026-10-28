@@ -1,0 +1,852 @@
+diff --git a/README.md b/README.md
+index 5fb3c77..a7b1c61 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# The Last Beacon — Milestone 12
++# The Last Beacon — Milestone 13
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -20,9 +20,10 @@ build label appear only in development.
+ 
+ 1. On first launch, choose **PLAY** in the story menu, or press **Esc** to start
+    on Border Watch. No wave starts automatically.
+-2. Click **BASIC TOWER**, then left-click empty ground to place a tower.
++2. Choose **BASIC**, **RAPID**, or **BOW** in the sidebar, then click **BUILD** or
++   press **B** and left-click empty ground to place that type of tower.
+ 3. Green previews mark valid tiles; red previews mark path/occupied tiles. The
+-   circle shows the tower's 128px range and is clipped to the map bounds.
++   circle shows the selected type's range and is clipped to the map bounds.
+ 4. Selection stays active for more placements. **Esc** or **CANCEL BUILD**
+    cancels selection.
+ 5. Click **START WAVE** when ready. It is dimmed and disabled while the wave is
+@@ -42,7 +43,7 @@ Keyboard shortcuts use the same actions as the buttons:
+ 
+ | Key | Action |
+ | --- | --- |
+-| B | Select/cancel building before or during a wave |
++| B | Select/cancel building the chosen tower type before or during a wave |
+ | N | Start the next wave only when ready |
+ | R | Restart at any time, including with help open or after a result |
+ | H | Open/close help outside active waves |
+@@ -53,8 +54,8 @@ blocked while R still resets the match. After a result, B and N stay locked.
+ With the level menu open, B/N/H are blocked; R still restarts the current map.
+ 
+ Help explains the objective, placement colors, tower inspection, manual waves,
+-lives, Restart, and current tower stats. Opening it closes build/inspection
+-selection and blocks map clicks. Build and Start Wave stay disabled until help
++lives, Restart, enemy stats, and all three tower profiles. Opening it closes
++build/inspection selection and blocks map clicks. Build and Start Wave stay disabled until help
+ closes; **RESTART** remains available in the sidebar. Help never pauses a wave.
+ 
+ Outside build mode, left-click a built tower's tile to inspect its range and
+@@ -165,13 +166,46 @@ enemy's kind and spawn age; its own speed determines how far it has moved. Each
+ chapter still uses 5/8/12 enemies, immediate first spawn, and one-second spacing.
+ Restart/replay starts the same lists afresh, with no individual respawns.
+ 
++## Tower choices
++
++| Type | Range | Shot interval | Damage | Appearance |
++| --- | --- | --- | --- | --- |
++| Basic | 128px | 1s | 1 | Original cyan head and single barrel |
++| Rapid | 96px | 0.4s | 1 | Green diamond head and twin barrels |
++| Longbow (BOW) | 192px | 1.5s | 2 | Amber head, slim barrel and bow limbs |
++
++Pick a type with the three sidebar buttons, then use B / BUILD to toggle building.
++Changing type while building keeps build mode active and updates the range
++preview immediately. Esc cancels building while keeping the chosen type.
++Choosing a type clears inspection; inspecting a placed tower shows that tower's
++own range, cadence, and damage rather than the type currently chosen for building.
++
++The sidebar stats describe the type chosen for building. The blue inspection
++circle and text beneath those stats describe the placed tower you clicked.
++Choosing another type never converts existing towers or changes their cooldowns
++or in-flight shots. Restart and chapter selection reset the choice to Basic.
++
++Type buttons and building are available before/during waves, blocked by open
++help/level panels, and locked after a result. All kinds use the existing empty
++ground/path/occupied-tile rules and cost nothing. There are no upgrades or sales.
++
++Each tower has its own cooldown, aims by path progress, and fires one projectile
++at a time. Both Rapid barrels are visual; a shot still produces one projectile.
++Longbow deals two damage to its original target, without piercing or splash.
++Projectile speed stays 320px/s for every kind; colors distinguish their shots.
++
++These HP/range/cadence interactions are initial balance values, especially with
++free placement. Play through the mixed-enemy chapters before accepting balance;
++the options are not claimed to have equal strength. Basic remains the reference.
++Profiles and the sidebar order are in `src/config/towerConfig.ts`.
++
+ ## Combat
+ 
+ | Setting | Value |
+ | --- | --- |
+-| Tower range | 128px, including the boundary |
+-| Fire interval | 1 second per tower |
+-| Damage | 1 HP per projectile impact |
++| Basic tower range | 128px, including the boundary |
++| Basic fire interval | 1 second per tower |
++| Basic damage | 1 HP per projectile impact |
+ | Basic enemy health | 3 HP |
+ | Basic enemy speed | 95px/second |
+ | Projectile speed | 320px/second |
+@@ -209,13 +243,14 @@ events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
+ escape warning replaces other active tones so the lost life remains audible.
+ 
+ Basic combat constants are in `src/config/combatConfig.ts`; enemy profiles are in
+-`src/config/enemyConfig.ts`. Baseline wave counts, spawn interval, and starting
+-lives are in `src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
++`src/config/enemyConfig.ts` and tower profiles in `src/config/towerConfig.ts`.
++Baseline wave counts, spawn interval, and starting lives are in
++`src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
+ `src/data/levels.ts`.
+ 
+ ## Quick play checks
+ 
+-On Border Watch, test victory by placing towers on these zero-based tiles:
++On Border Watch, choose Basic and test victory with these zero-based tiles:
+ 
+ ```text
+ (0,2) (1,2) (2,2) (3,2)
+@@ -238,7 +273,35 @@ npm run preview
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 12 verification status
++### Milestone 13 verification status
++
++M13 follows the tower-choice roadmap: Basic stays unchanged; Rapid and Longbow
++add contrasting range/cadence/damage profiles, procedural shapes, and shot colors.
++The sidebar adds type selection, with matching build previews, inspection, and
++help. No dependencies, economy, special attack mechanics, or enemy/wave changes
++were added.
++
++- `Tower` creates its own `TowerAttack` from its profile. `Projectile` receives
++  that firing tower's profile and captures damage in `ProjectileMotion`, so
++  selecting another type does not affect existing towers or projectiles.
++- Targeting, cooldown, and projectile algorithms in `src/systems/Combat.ts` and
++  all wave/path/life rules stay unchanged. Existing constructors default to Basic.
++- Added 11 `TowerTypes.test.ts` cases using actual Tower/Projectile entities with
++  drawing-only Phaser stubs: per-kind range boundaries, cadence, damage-once,
++  slow frames, default Basic compatibility, independent cooldowns, progress/tie
++  targeting, and original-target ownership after leaving range or dying.
++- `npm run test` and `npm run build` were attempted after the implementation.
++  Both exited before scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. The tests, TypeScript check, and build are unconfirmed.
++- Source review covers profile propagation, type-switch and panel/result gating,
++  range masking, placed-tower inspection, and Restart defaults. Drawing stubs do
++  not verify actual rendering; browser layout, controls, audio cleanup, and
++  balance need the manual checks below.
++- The M12 snapshot is available separately in `docs/commits/M12.patch`; it excludes
++  M13 and the existing `package-lock.json` changes. Follow the commit preparation
++  guide in `docs/commits/README.md` for human terminal execution.
++
++### Milestone 12 verification status (previously recorded)
+ 
+ M12 implements Runner/Guard profiles and silhouettes, chapter wave composition,
+ per-kind speed/HP/health bars, and next-wave/help information. Basic remains at
+@@ -394,6 +457,25 @@ sharpness on other displays still need manual verification.
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Confirm Basic is initially selected and selected again after Restart or
++      chapter selection. B/BUILD should place that type and Esc cancel building.
++- [ ] Choose Rapid and BOW before and during waves. While building, change type:
++      preview should immediately change to 96px/192px without leaving build mode.
++      Check previews and inspection circles stay clipped at map edges/resizing.
++- [ ] Place all three kinds; check recognizable shapes and projectile colors.
++      Twin Rapid barrels must produce one projectile per shot, not two.
++- [ ] Inspect each placed kind after choosing another type. Verify the blue range
++      circle and inspection text match the placed tower, while the sidebar stats
++      above describe the chosen build type. Choosing a type clears inspection.
++- [ ] Check Basic remains 128px/1s/1 damage, Rapid is 96px/0.4s/1 damage, and
++      Longbow is 192px/1.5s/2 damage. A full-health Runner needs one Longbow hit;
++      a Guard needs four. Shots stay on their original live target outside range.
++- [ ] Mix all kinds and verify cooldowns stay independent, progress/tie targeting
++      is unchanged, and slow frames do not queue bursts. Review chapter difficulty
++      with free placement before accepting the initial balance values.
++- [ ] Open help/levels and finish a match: type selection/build must be blocked.
++      Check path/occupied-tile rejection, repeated Restart, text fit, audio, and
++      no duplicate actions or browser console errors.
+ - [ ] Confirm Border Watch still has 25 Basic enemies and the example tower
+       layout works as before. Check unchanged Basic HP/speed and tower stats.
+ - [ ] In Whispering Grove, compare the ready footer with the table above. Watch
+@@ -509,7 +591,7 @@ sharpness on other displays still need manual verification.
+ 
+ ## Project structure
+ 
+-- `src/config`: dimensions, combat/enemy profiles, and wave/life settings.
++- `src/config`: dimensions, enemy/tower profiles, and combat/wave/life settings.
+ - `src/data`: chapter stories, palettes, paths, and ordered enemy wave lists.
+ - `src/systems`: pure movement, placement, combat, and wave/match logic.
+ - `src/entities`: Phaser enemy, tower, and projectile presentation.
+@@ -541,12 +623,14 @@ beacon gate, and manual next chapter. Combat and waves remain the same per map.
+ M12 adds Runner/Guard profiles, distinct enemy silhouettes, normalized health bars,
+ chapter-specific enemy lists, and next-wave/help composition information. Targeting,
+ projectile damage/ownership, spawning intervals, lives, and outcomes are unchanged.
+-Tower variety is planned next; economy, upgrades, and selling remain out of scope.
++M13 adds Rapid/Longbow tower profiles, type selection, per-kind previews/inspection,
++procedural silhouettes, shot colors, and damage/cadence. Basic and the shared
++combat algorithms remain unchanged. Economy, upgrades, and selling remain out of scope.
+ See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 through M12 build verification is pending as described above.
++M5 through M13 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index f864099..77dd72f 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -42,12 +42,20 @@ Implemented in code, awaiting automated/browser acceptance:
+ 
+ ## M13: tower choices
+ 
+-- Keep Basic Tower unchanged as a reference.
+-- Add contrasting options such as a short-range rapid tower and a long-range,
+-  slower tower; review range/cadence/damage tradeoffs against M12 enemies.
+-- Extend selection, preview, inspection, and help to display each tower's stats.
+-- Introduce special mechanics such as splash or slowing only as an explicitly
+-  reviewed change, with tests for target ownership and effect rules.
++Implemented in code, awaiting automated/browser acceptance:
++
++- Basic stays 128px / 1s / 1 damage. Rapid starts at 96px / 0.4s / 1 damage;
++  Longbow starts at 192px / 1.5s / 2 damage. All retain free placement.
++- Three type buttons choose the profile used by B / BUILD. Switching during
++  building updates preview; inspecting uses the placed tower's own profile.
++- Green twin-barrel and amber bow silhouettes plus shot colors distinguish the
++  additions. Help lists all profiles; Restart/chapter changes select Basic again.
++- Reuse pure targeting/cooldown/projectile algorithms. Damage comes from the
++  firing tower; projectile speed, original-target ownership, and all waves stay
++  unchanged. No splash, slowing, piercing, economy, upgrades, or selling.
++- Entity-level tests stub drawing but exercise actual Tower/Projectile wiring.
++  Test/build execution is blocked as recorded in the README. Browser text fit,
++  controls, and balance against M12 enemies remain for human acceptance.
+ 
+ ## M14: graphics and gameplay polish
+ 
+diff --git a/src/entities/Projectile.ts b/src/entities/Projectile.ts
+index bbf447f..d899f2a 100644
+--- a/src/entities/Projectile.ts
++++ b/src/entities/Projectile.ts
+@@ -1,5 +1,6 @@
+ import Phaser from 'phaser';
+-import { PROJECTILE_SPEED, TOWER_DAMAGE } from '../config/combatConfig';
++import { PROJECTILE_SPEED } from '../config/combatConfig';
++import { TOWER_TYPES, type TowerProfile } from '../config/towerConfig';
+ import type { Point } from '../data/map';
+ import { ProjectileMotion, type CombatTarget } from '../systems/Combat';
+ 
+@@ -7,15 +8,20 @@ export class Projectile {
+   private readonly motion: ProjectileMotion;
+   private readonly sprite: Phaser.GameObjects.Rectangle;
+ 
+-  constructor(scene: Phaser.Scene, origin: Point, target: CombatTarget) {
++  constructor(
++    scene: Phaser.Scene,
++    origin: Point,
++    target: CombatTarget,
++    profile: TowerProfile = TOWER_TYPES.basic,
++  ) {
+     this.motion = new ProjectileMotion(
+       origin,
+       target,
+       PROJECTILE_SPEED,
+-      TOWER_DAMAGE,
++      profile.damage,
+     );
+     this.sprite = scene.add
+-      .rectangle(origin.x, origin.y, 8, 8, 0xffdc73)
++      .rectangle(origin.x, origin.y, 8, 8, profile.projectileColor)
+       .setStrokeStyle(1, 0x9d6f2b)
+       .setDepth(3);
+   }
+diff --git a/src/entities/Tower.ts b/src/entities/Tower.ts
+index ed2a8f6..1a38ac1 100644
+--- a/src/entities/Tower.ts
++++ b/src/entities/Tower.ts
+@@ -1,32 +1,61 @@
+ import Phaser from 'phaser';
+-import { TOWER_FIRE_INTERVAL, TOWER_RANGE } from '../config/combatConfig';
+ import { TILE } from '../config/gameConfig';
++import { TOWER_TYPES, type TowerKind, type TowerProfile } from '../config/towerConfig';
+ import type { Point } from '../data/map';
+ import { selectTarget, TowerAttack, type CombatTarget } from '../systems/Combat';
+ 
+ export class Tower extends Phaser.GameObjects.Container {
++  readonly profile: TowerProfile;
+   private readonly turret: Phaser.GameObjects.Container;
+   private readonly muzzleFlash: Phaser.GameObjects.Rectangle;
+-  private readonly attack = new TowerAttack(TOWER_RANGE, TOWER_FIRE_INTERVAL);
++  private readonly attack: TowerAttack;
+ 
+-  constructor(scene: Phaser.Scene, tile: Point) {
++  constructor(scene: Phaser.Scene, tile: Point, readonly kind: TowerKind = 'basic') {
+     super(scene, (tile.x + 0.5) * TILE, (tile.y + 0.5) * TILE);
++    const profile = TOWER_TYPES[kind];
++    this.profile = profile;
++    this.attack = new TowerAttack(profile.range, profile.interval);
+ 
+     const base = scene.add
+       .rectangle(0, 6, 40, 32, 0x33485c)
+       .setStrokeStyle(3, 0x1b2c3b);
+-    const head = scene.add
+-      .rectangle(0, 0, 26, 26, 0x4bc5e8)
+-      .setStrokeStyle(3, 0x236b88);
+-    const barrel = scene.add
+-      .rectangle(0, -17, 10, 24, 0xb9e8f5)
+-      .setStrokeStyle(2, 0x236b88);
++    const head = kind === 'rapid'
++      ? scene.add
++        .polygon(0, 0, [0, 13, 13, 0, 26, 13, 13, 26], profile.color)
++        .setStrokeStyle(3, profile.outline)
++      : scene.add
++        .rectangle(0, 0, 26, 26, profile.color)
++        .setStrokeStyle(3, profile.outline);
++    const content: Phaser.GameObjects.GameObject[] = [head];
++
++    if (kind === 'rapid') {
++      for (const x of [-6, 6]) {
++        content.push(scene.add
++          .rectangle(x, -17, 6, 22, 0xb9e8f5)
++          .setStrokeStyle(2, profile.outline));
++      }
++    } else {
++      content.push(scene.add
++        .rectangle(0, -17, kind === 'longbow' ? 6 : 10, 24, 0xb9e8f5)
++        .setStrokeStyle(2, profile.outline));
++    }
++
++    if (kind === 'longbow') {
++      content.push(scene.add.graphics()
++        .lineStyle(3, profile.outline)
++        .beginPath()
++        .moveTo(-15, -8)
++        .lineTo(0, -19)
++        .lineTo(15, -8)
++        .strokePath());
++    }
+ 
+     this.muzzleFlash = scene.add
+-      .rectangle(0, -27, 12, 6, 0xffedb5)
++      .rectangle(0, -27, kind === 'rapid' ? 20 : 12, 6, 0xffedb5)
+       .setAlpha(0);
+ 
+-    this.turret = scene.add.container(0, 0, [head, barrel, this.muzzleFlash]);
++    content.push(this.muzzleFlash);
++    this.turret = scene.add.container(0, 0, content);
+     this.add([base, this.turret]);
+     this.setDepth(1);
+     scene.add.existing(this);
+@@ -36,7 +65,7 @@ export class Tower extends Phaser.GameObjects.Container {
+     deltaMs: number,
+     targets: readonly CombatTarget[],
+   ): CombatTarget | null {
+-    const target = selectTarget(this, targets, TOWER_RANGE);
++    const target = selectTarget(this, targets, this.profile.range);
+ 
+     if (target) {
+       this.turret.setRotation(
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+index 8a064e3..c2fce0a 100644
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -1,11 +1,7 @@
+ import Phaser from 'phaser';
+-import {
+-  TOWER_DAMAGE,
+-  TOWER_FIRE_INTERVAL,
+-  TOWER_RANGE,
+-} from '../config/combatConfig';
+ import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+ import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
++import { TOWER_KINDS, TOWER_TYPES, type TowerKind } from '../config/towerConfig';
+ import { SPAWN_INTERVAL, STARTING_LIVES } from '../config/waveConfig';
+ import { LEVELS, type LevelDefinition } from '../data/levels';
+ import type { Point } from '../data/map';
+@@ -43,6 +39,9 @@ export class GameScene extends Phaser.Scene {
+   private placementPreview!: Phaser.GameObjects.Graphics;
+   private towerInspection!: Phaser.GameObjects.Graphics;
+   private towerButton!: Phaser.GameObjects.Text;
++  private towerTypeButtons: Phaser.GameObjects.Text[] = [];
++  private towerStatsText!: Phaser.GameObjects.Text;
++  private selectedTowerKind: TowerKind = 'basic';
+   private placementText!: Phaser.GameObjects.Text;
+   private towerCountText!: Phaser.GameObjects.Text;
+   private towerSelected = false;
+@@ -63,6 +62,7 @@ export class GameScene extends Phaser.Scene {
+       STARTING_LIVES,
+     );
+     this.towerSelected = false;
++    this.selectedTowerKind = 'basic';
+     this.towers = [];
+     this.enemies = [];
+     this.projectiles = [];
+@@ -220,15 +220,30 @@ export class GameScene extends Phaser.Scene {
+   }
+ 
+   private createPlacementControls(): void {
++    this.towerTypeButtons = TOWER_KINDS.map((kind, index) => {
++      const button = this.add
++        .text(786 + index * 50, 208, TOWER_TYPES[kind].shortLabel, {
++          fontFamily: 'monospace', fontSize: '11px', color: '#ffffff',
++          backgroundColor: '#33485c', fixedWidth: 48, align: 'center',
++          padding: { x: 2, y: 6 },
++        })
++        .setInteractive({ useHandCursor: true });
++      button.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
++        if (pointer.leftButtonDown()) {
++          this.selectTowerKind(kind);
++        }
++      });
++      return button;
++    });
+     this.towerButton = this.add
+-      .text(786, 216, 'BASIC TOWER', {
++      .text(786, 242, 'BUILD BASIC', {
+         fontFamily: 'monospace',
+-        fontSize: '14px',
++        fontSize: '13px',
+         color: '#ffffff',
+         backgroundColor: '#33485c',
+         fixedWidth: 148,
+         align: 'center',
+-        padding: { x: 8, y: 10 },
++        padding: { x: 8, y: 8 },
+       })
+       .setInteractive({ useHandCursor: true });
+ 
+@@ -238,19 +253,19 @@ export class GameScene extends Phaser.Scene {
+       }
+     });
+ 
+-    this.add.text(
++    this.towerStatsText = this.add.text(
+       786,
+-      266,
+-      `${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG`,
++      282,
++      '',
+       {
+         fontFamily: 'monospace',
+-        fontSize: '12px',
++        fontSize: '11px',
+         color: '#b4d9bc',
+       },
+     );
+-    this.placementText = this.add.text(786, 300, 'Select BASIC TOWER\nto start building.', {
++    this.placementText = this.add.text(786, 302, 'Choose type, then\nB / BUILD to place.', {
+       fontFamily: 'monospace',
+-      fontSize: '13px',
++      fontSize: '12px',
+       color: '#ffffff',
+       wordWrap: { width: 156 },
+       lineSpacing: 5,
+@@ -271,6 +286,50 @@ export class GameScene extends Phaser.Scene {
+     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => previewMask.destroy());
+   }
+ 
++  private selectTowerKind(kind: TowerKind): void {
++    if (this.waves.finished || this.helpPanel.visible || this.levelPanel.visible) {
++      return;
++    }
++
++    this.selectedTowerKind = kind;
++    this.clearTowerInspection();
++    this.refreshTowerControls();
++    this.placementText.setText(
++      this.towerSelected
++        ? 'Click empty ground.\nB or Esc to cancel.'
++        : 'Type selected.\nB / BUILD to place.',
++    );
++
++    if (this.input.manager.isOver) {
++      this.updatePlacementPreview(this.input.activePointer);
++    }
++  }
++
++  private refreshTowerControls(): void {
++    const available =
++      !this.waves.finished && !this.helpPanel.visible && !this.levelPanel.visible;
++    const profile = TOWER_TYPES[this.selectedTowerKind];
++    this.towerStatsText.setText(`${profile.range}px / ${profile.interval}s / ${profile.damage} DMG`);
++
++    this.towerTypeButtons.forEach((button, index) => {
++      button
++        .setBackgroundColor(TOWER_KINDS[index] === this.selectedTowerKind ? '#236b88' : '#33485c')
++        .setAlpha(available ? 1 : 0.55);
++      button.input!.enabled = available;
++    });
++    this.towerButton
++      .setText(
++        this.waves.finished
++          ? 'BUILD LOCKED'
++          : this.towerSelected
++            ? 'CANCEL BUILD'
++            : `BUILD ${profile.label}`,
++      )
++      .setBackgroundColor(this.towerSelected ? '#236b88' : '#33485c')
++      .setAlpha(available ? 1 : 0.55);
++    this.towerButton.input!.enabled = available;
++  }
++
+   private toggleBuild(event?: KeyboardEvent): void {
+     if (
+       event?.repeat || this.waves.finished || this.helpPanel.visible ||
+@@ -284,9 +343,7 @@ export class GameScene extends Phaser.Scene {
+     } else {
+       this.clearTowerInspection();
+       this.towerSelected = true;
+-      this.towerButton
+-        .setText('CANCEL BUILD')
+-        .setBackgroundColor('#236b88');
++      this.refreshTowerControls();
+       this.placementText.setText('Click empty ground.\nB or Esc to cancel.');
+ 
+       if (this.input.manager.isOver) {
+@@ -319,12 +376,13 @@ export class GameScene extends Phaser.Scene {
+     const color = status === 'available' ? 0x91ff9e : 0xff7373;
+     const centerX = (tile.x + 0.5) * TILE;
+     const centerY = (tile.y + 0.5) * TILE;
++    const range = TOWER_TYPES[this.selectedTowerKind].range;
+ 
+     this.placementPreview
+       .fillStyle(color, 0.06)
+-      .fillCircle(centerX, centerY, TOWER_RANGE)
++      .fillCircle(centerX, centerY, range)
+       .lineStyle(1, color, 0.8)
+-      .strokeCircle(centerX, centerY, TOWER_RANGE)
++      .strokeCircle(centerX, centerY, range)
+       .fillStyle(color, 0.25)
+       .fillRect(tile.x * TILE, tile.y * TILE, TILE, TILE)
+       .lineStyle(2, color)
+@@ -359,10 +417,8 @@ export class GameScene extends Phaser.Scene {
+ 
+   private cancelPlacement(): void {
+     this.towerSelected = false;
+-    this.towerButton
+-      .setText('BASIC TOWER')
+-      .setBackgroundColor('#33485c');
+-    this.placementText.setText('Select BASIC TOWER\nto start building.');
++    this.refreshTowerControls();
++    this.placementText.setText('Choose type, then\nB / BUILD to place.');
+     this.hidePlacementPreview();
+   }
+ 
+@@ -396,14 +452,15 @@ export class GameScene extends Phaser.Scene {
+       return;
+     }
+ 
++    const profile = tower.profile;
+     this.towerInspection
+       .fillStyle(0x7eddf5, 0.08)
+-      .fillCircle(tower.x, tower.y, TOWER_RANGE)
++      .fillCircle(tower.x, tower.y, profile.range)
+       .lineStyle(2, 0x7eddf5, 0.9)
+-      .strokeCircle(tower.x, tower.y, TOWER_RANGE)
++      .strokeCircle(tower.x, tower.y, profile.range)
+       .strokeRect(tile.x * TILE + 2, tile.y * TILE + 2, TILE - 4, TILE - 4);
+     this.placementText.setText(
+-      `BASIC TOWER\n${TOWER_RANGE}px / ${TOWER_FIRE_INTERVAL}s / ${TOWER_DAMAGE} DMG\nEsc to close.`,
++      `${profile.label} TOWER\n${profile.range}px / ${profile.interval}s\n${profile.damage} DMG / Esc closes.`,
+     );
+   }
+ 
+@@ -425,7 +482,7 @@ export class GameScene extends Phaser.Scene {
+     } else if (status === 'occupied') {
+       this.placementText.setText('This tile already\nhas a tower.');
+     } else if (this.placement.place(tile)) {
+-      this.towers.push(new Tower(this, tile));
++      this.towers.push(new Tower(this, tile, this.selectedTowerKind));
+       this.towerCountText.setText(`TOWERS  ${this.placement.count}`);
+       this.placementText.setText('Tower placed.\nChoose another tile.');
+     }
+@@ -768,8 +825,7 @@ export class GameScene extends Phaser.Scene {
+       .setAlpha(waveAvailable ? 1 : 0.55);
+ 
+     this.waveButton.input!.enabled = waveAvailable;
+-    this.towerButton.input!.enabled = !waves.finished && !panelOpen;
+-    this.towerButton.setAlpha(waves.finished || panelOpen ? 0.55 : 1);
++    this.refreshTowerControls();
+ 
+     const helpAvailable = waves.state !== 'running' && !this.levelPanel.visible;
+     const helpLabel = this.levelPanel.visible
+@@ -854,7 +910,7 @@ export class GameScene extends Phaser.Scene {
+         const target = tower.updateAttack(delta, targets);
+ 
+         if (target) {
+-          this.projectiles.push(new Projectile(this, tower, target));
++          this.projectiles.push(new Projectile(this, tower, target, tower.profile));
+           this.combatAudio?.play('shot');
+         }
+       }
+diff --git a/src/scenes/createHelpPanel.ts b/src/scenes/createHelpPanel.ts
+index 67a00b6..6c54855 100644
+--- a/src/scenes/createHelpPanel.ts
++++ b/src/scenes/createHelpPanel.ts
+@@ -1,11 +1,7 @@
+ import type Phaser from 'phaser';
+-import {
+-  TOWER_DAMAGE,
+-  TOWER_FIRE_INTERVAL,
+-  TOWER_RANGE,
+-} from '../config/combatConfig';
+ import { COLS, ROWS, TILE } from '../config/gameConfig';
+ import { ENEMY_TYPES } from '../config/enemyConfig';
++import { TOWER_KINDS, TOWER_TYPES } from '../config/towerConfig';
+ import { STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+ 
+ export function createHelpPanel(
+@@ -53,7 +49,7 @@ export function createHelpPanel(
+     -320,
+     -116,
+     [
+-      'BUILD    B selects/cancels building, then click empty ground.',
++      'BUILD    Choose BASIC/RAPID/BOW; B builds the selected type.',
+       '         Green = valid; red = blocked. Esc cancels building.',
+       'INSPECT  Cancel building, then click a placed tower.',
+       `WAVES    N starts ${WAVE_COUNTS.join(' / ')} enemies; wait until each wave clears.`,
+@@ -80,10 +76,24 @@ export function createHelpPanel(
+       fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4,
+     },
+   );
++  const towerLegend = scene.add.text(16, -2, 'TOWERS (range / interval / damage)', {
++    fontFamily: 'monospace', fontSize: '12px', color: '#f5e6ae',
++  });
++  const towerStats = scene.add.text(
++    16,
++    18,
++    TOWER_KINDS.map((kind) => {
++      const profile = TOWER_TYPES[kind];
++      return `${profile.label.padEnd(7)} ${profile.range}px / ${profile.interval}s / ${profile.damage}`;
++    }).join('\n'),
++    {
++      fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', lineSpacing: 5,
++    },
++  );
+   const stats = scene.add.text(
+     -320,
+     102,
+-    `Basic tower: ${TOWER_RANGE}px range / ${TOWER_FIRE_INTERVAL}s per shot / ${TOWER_DAMAGE} damage`,
++    'B toggles building. Change type while building to update the preview.',
+     { fontFamily: 'monospace', fontSize: '14px', color: '#b9e8f5' },
+   );
+   const hint = scene.add
+@@ -131,6 +141,8 @@ export function createHelpPanel(
+       instructions,
+       enemyLegend,
+       enemyStats,
++      towerLegend,
++      towerStats,
+       stats,
+       hint,
+       closeButton,
+diff --git a/src/config/towerConfig.ts b/src/config/towerConfig.ts
+new file mode 100644
+--- /dev/null
++++ b/src/config/towerConfig.ts
+@@ -0,0 +1,38 @@
++import { TOWER_DAMAGE, TOWER_FIRE_INTERVAL, TOWER_RANGE } from './combatConfig';
++
++export const TOWER_TYPES = {
++  basic: {
++    label: 'BASIC',
++    shortLabel: 'BASIC',
++    range: TOWER_RANGE,
++    interval: TOWER_FIRE_INTERVAL,
++    damage: TOWER_DAMAGE,
++    color: 0x4bc5e8,
++    outline: 0x236b88,
++    projectileColor: 0xffdc73,
++  },
++  rapid: {
++    label: 'RAPID',
++    shortLabel: 'RAPID',
++    range: 96,
++    interval: 0.4,
++    damage: 1,
++    color: 0x91d57c,
++    outline: 0x356645,
++    projectileColor: 0xb4ffa0,
++  },
++  longbow: {
++    label: 'LONGBOW',
++    shortLabel: 'BOW',
++    range: 192,
++    interval: 1.5,
++    damage: 2,
++    color: 0xe1b56c,
++    outline: 0x80542e,
++    projectileColor: 0xffbe73,
++  },
++} as const;
++
++export const TOWER_KINDS = ['basic', 'rapid', 'longbow'] as const;
++export type TowerKind = typeof TOWER_KINDS[number];
++export type TowerProfile = typeof TOWER_TYPES[TowerKind];
+diff --git a/src/tests/TowerTypes.test.ts b/src/tests/TowerTypes.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/tests/TowerTypes.test.ts
+@@ -0,0 +1,157 @@
++import type Phaser from 'phaser';
++import { describe, expect, it, vi } from 'vitest';
++import { TOWER_TYPES } from '../config/towerConfig';
++import { Projectile } from '../entities/Projectile';
++import { Tower } from '../entities/Tower';
++import type { CombatTarget } from '../systems/Combat';
++
++// Stub drawing only; use the real entities, targeting, cooldown and projectile motion.
++vi.mock('phaser', () => ({
++  default: {
++    GameObjects: {
++      Container: class {
++        constructor(public scene: unknown, public x: number, public y: number) {}
++        add() { return this; }
++        setDepth() { return this; }
++      },
++    },
++    Math: {
++      Angle: {
++        Between: (x1: number, y1: number, x2: number, y2: number) =>
++          Math.atan2(y2 - y1, x2 - x1),
++      },
++    },
++  },
++}));
++
++function createScene(): Phaser.Scene {
++  const shape = () => ({
++    setStrokeStyle() { return this; },
++    setAlpha() { return this; },
++    setDepth() { return this; },
++    setRotation() { return this; },
++    setPosition() { return this; },
++    destroy() {},
++  });
++  const graphics = () => ({
++    lineStyle() { return this; },
++    beginPath() { return this; },
++    moveTo() { return this; },
++    lineTo() { return this; },
++    strokePath() { return this; },
++  });
++  return {
++    add: {
++      rectangle: shape,
++      polygon: shape,
++      graphics,
++      container: shape,
++      existing() {},
++    },
++    tweens: { killTweensOf() {}, add() {} },
++  } as unknown as Phaser.Scene;
++}
++
++function targetAt(x: number, y: number, health = 7, progress = 0): CombatTarget {
++  return { position: { x, y }, health, progress };
++}
++
++describe('Tower types through entity combat', () => {
++  const cases = [
++    { kind: 'basic', range: 128, interval: 1, damage: 1 },
++    { kind: 'rapid', range: 96, interval: 0.4, damage: 1 },
++    { kind: 'longbow', range: 192, interval: 1.5, damage: 2 },
++  ] as const;
++
++  for (const { kind, range, interval, damage } of cases) {
++    it(`${kind} uses its own range and cadence without queued bursts`, () => {
++      const tower = new Tower(createScene(), { x: 0, y: 0 }, kind);
++      const target = targetAt(tower.x + range + 0.01, tower.y);
++
++      expect(tower.updateAttack(0, [target])).toBeNull();
++      target.position.x = tower.x + range;
++      expect(tower.updateAttack(0, [target])).toBe(target);
++      expect(tower.updateAttack((interval - 0.01) * 1000, [target])).toBeNull();
++      expect(tower.updateAttack(20, [target])).toBe(target);
++      expect(tower.updateAttack(10_000, [target])).toBe(target);
++      expect(tower.updateAttack(0, [target])).toBeNull();
++    });
++
++    it(`${kind} projectiles apply ${damage} damage exactly once`, () => {
++      const scene = createScene();
++      const tower = new Tower(scene, { x: 0, y: 0 }, kind);
++      const target = targetAt(tower.x + range, tower.y);
++      const projectile = new Projectile(scene, tower, target, tower.profile);
++
++      expect(projectile.update(1000)).toBe(true);
++      expect(target.health).toBe(7 - damage);
++      expect(projectile.update(1000)).toBe(true);
++      expect(target.health).toBe(7 - damage);
++    });
++  }
++
++  it('keeps default constructors compatible with the original Basic tower', () => {
++    const scene = createScene();
++    const tower = new Tower(scene, { x: 0, y: 0 });
++    const target = targetAt(tower.x + 100, tower.y, 3);
++    expect(tower.kind).toBe('basic');
++    expect(tower.profile).toBe(TOWER_TYPES.basic);
++    expect(tower.updateAttack(0, [target])).toBe(target);
++
++    new Projectile(scene, tower, target).update(1000);
++    expect(target.health).toBe(2);
++  });
++
++  it('keeps cooldowns independent between Rapid and Longbow', () => {
++    const scene = createScene();
++    const rapid = new Tower(scene, { x: 0, y: 0 }, 'rapid');
++    const longbow = new Tower(scene, { x: 0, y: 0 }, 'longbow');
++    const target = targetAt(rapid.x + 50, rapid.y);
++    expect(rapid.updateAttack(0, [target])).toBe(target);
++    expect(longbow.updateAttack(0, [target])).toBe(target);
++    expect(rapid.updateAttack(400, [target])).toBe(target);
++    expect(longbow.updateAttack(400, [target])).toBeNull();
++  });
++
++  it('uses path progress and spawn-order ties for each tower kind', () => {
++    for (const { kind } of cases) {
++      const tower = new Tower(createScene(), { x: 0, y: 0 }, kind);
++      const first = targetAt(tower.x + 50, tower.y, 3, 200);
++      const tied = targetAt(tower.x + 20, tower.y, 3, 200);
++      const behind = targetAt(tower.x + 10, tower.y, 3, 100);
++      expect(tower.updateAttack(0, [behind, first, tied])).toBe(first);
++    }
++  });
++
++  it('keeps Longbow damage on its original living target outside tower range', () => {
++    const scene = createScene();
++    const tower = new Tower(scene, { x: 0, y: 0 }, 'longbow');
++    const original = targetAt(tower.x + 100, tower.y, 7, 100);
++    const replacement = targetAt(tower.x + 50, tower.y, 2, 200);
++    const projectile = new Projectile(scene, tower, original, tower.profile);
++    original.position.x = tower.x + 400;
++
++    expect(tower.updateAttack(0, [original, replacement])).toBe(replacement);
++    expect(projectile.update(2000)).toBe(true);
++    expect(original.health).toBe(5);
++    expect(replacement.health).toBe(2);
++
++    const expired = new Projectile(scene, tower, original, tower.profile);
++    original.health = 0;
++    expect(expired.update(2000)).toBe(true);
++    expect(replacement.health).toBe(2);
++  });
++
++  it('clamps a lethal Longbow hit and expires other shots on that target', () => {
++    const scene = createScene();
++    const tower = new Tower(scene, { x: 0, y: 0 }, 'longbow');
++    const target = targetAt(tower.x + 100, tower.y, 1);
++    const first = new Projectile(scene, tower, target, tower.profile);
++    const second = new Projectile(scene, tower, target, tower.profile);
++
++    expect(first.update(1000)).toBe(true);
++    expect(target.health).toBe(0);
++    expect(second.update(1000)).toBe(true);
++    expect(target.health).toBe(0);
++  });
++});

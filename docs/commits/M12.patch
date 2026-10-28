@@ -1,0 +1,684 @@
+diff --git a/README.md b/README.md
+index c3af912..5fb3c77 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# The Last Beacon — Milestone 11
++# The Last Beacon — Milestone 12
+ 
+ A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
+ Three 12x8 maps use 64px tiles on a logical 960x640 canvas with a sidebar.
+@@ -84,7 +84,9 @@ or between waves, or after a result. Level selection is disabled during a wave.
+ 
+ Each chapter has a different path and palette. The beacon gate, IN/OUT markers,
+ movement, placement rules, and escape warning all use the selected map's path.
+-Story text and palettes are in `src/data/levels.ts`.
++Story text, palettes, and ordered enemy lists are in `src/data/levels.ts`.
++Border Watch retains only Basic enemies. Whispering Grove introduces Runners in
++wave 1 and Guards in wave 2; Dawn Keep mixes all three kinds.
+ 
+ All three chapters are available immediately. Choosing PLAY starts that chapter
+ fresh: 10 lives, 0 kills/towers, wave 1 waiting for manual input, and no old
+@@ -130,6 +132,39 @@ The sidebar shows lives, wave number, active enemies, kills, and tower count.
+ The footer reports the wave's spawn progress.
+ The result panel shows the wave reached, kills, remaining lives, and towers built.
+ 
++## Enemy types and wave composition
++
++| Kind | HP | Speed | Appearance |
++| --- | --- | --- | --- |
++| Basic | 3 | 95px/s | Original purple square |
++| Runner | 2 | 140px/s | Orange diamond with R |
++| Guard | 7 | 65px/s | Larger blue-gray body, shield, and G |
++
++All kinds still cost one life on escape and add one kill on death. Guard has more
++HP, with no armor reduction or special ability. Every HP bar starts full and uses
++that kind's maximum HP. Profiles are in `src/config/enemyConfig.ts`.
++
++The ready footer previews the next wave's composition. HOW TO PLAY lists enemy
++HP/speed and markers. Runners can overtake earlier enemies; towers still prioritize
++the furthest in-range path progress, with spawn order breaking ties.
++
++| Chapter | Wave | Basic | Runner | Guard |
++| --- | --- | --- | --- | --- |
++| Border Watch | 1 | 5 | 0 | 0 |
++| Border Watch | 2 | 8 | 0 | 0 |
++| Border Watch | 3 | 12 | 0 | 0 |
++| Whispering Grove | 1 | 3 | 2 | 0 |
++| Whispering Grove | 2 | 4 | 3 | 1 |
++| Whispering Grove | 3 | 5 | 4 | 3 |
++| Dawn Keep | 1 | 2 | 2 | 1 |
++| Dawn Keep | 2 | 2 | 3 | 3 |
++| Dawn Keep | 3 | 3 | 4 | 5 |
++
++Lists are deterministic, including spawn order. Long frames retain each queued
++enemy's kind and spawn age; its own speed determines how far it has moved. Each
++chapter still uses 5/8/12 enemies, immediate first spawn, and one-second spacing.
++Restart/replay starts the same lists afresh, with no individual respawns.
++
+ ## Combat
+ 
+ | Setting | Value |
+@@ -137,8 +172,8 @@ The result panel shows the wave reached, kills, remaining lives, and towers buil
+ | Tower range | 128px, including the boundary |
+ | Fire interval | 1 second per tower |
+ | Damage | 1 HP per projectile impact |
+-| Enemy health | 3 HP |
+-| Enemy speed | 95px/second |
++| Basic enemy health | 3 HP |
++| Basic enemy speed | 95px/second |
+ | Projectile speed | 320px/second |
+ 
+ Each tower chooses the live in-range enemy with the greatest distance traveled
+@@ -173,8 +208,10 @@ Restart and mute stop all active tones. Muted/suspended audio does not queue old
+ events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
+ escape warning replaces other active tones so the lost life remains audible.
+ 
+-Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
+-and starting lives are in `src/config/waveConfig.ts`.
++Basic combat constants are in `src/config/combatConfig.ts`; enemy profiles are in
++`src/config/enemyConfig.ts`. Baseline wave counts, spawn interval, and starting
++lives are in `src/config/waveConfig.ts`; each chapter's ordered enemy lists are in
++`src/data/levels.ts`.
+ 
+ ## Quick play checks
+ 
+@@ -201,7 +238,29 @@ npm run preview
+ 
+ Open the preview URL to test production. FPS and the development label are hidden.
+ 
+-### Milestone 11 verification status
++### Milestone 12 verification status
++
++M12 implements Runner/Guard profiles and silhouettes, chapter wave composition,
++per-kind speed/HP/health bars, and next-wave/help information. Basic remains at
++3 HP and 95px/s, and Border Watch retains the original all-Basic match.
++
++- `WaveSystem`, targeting, and projectile logic are unchanged. The scene derives
++  counts from the chapter's lists and assigns each scheduled age to the kind at
++  the spawn index recorded before that frame's scheduler update.
++- Added six profile/combat tests in `EnemyTypes.test.ts` and six wave-composition
++  checks in `levels.test.ts`, including fast-enemy overtaking, mixed-kind ties,
++  original-target damage, exact counts, and gradual introductions.
++- A static data check confirmed all nine wave lists have sizes 5/8/12 and valid
++  kind IDs. This check does not execute Vitest or Phaser.
++- `npm run test` and `npm run build` were attempted after M12 implementation. Both
++  exited before their scripts ran with Node `EPERM: operation not permitted,
++  lstat 'C:\Users\Admin'`. The new tests and M12 build are not yet confirmed.
++- Source review checked profile initialization, full/normalized health bars,
++  per-frame spawn indices, unchanged life/kill rules, and restart lists. Browser
++  checks of silhouettes, long-frame mixed spawns, and chapter balance are pending.
++- No dependencies were added. Tower variety remains the next milestone.
++
++### Milestone 11 verification status (previously recorded)
+ 
+ The approved expansion direction is fantasy maps/story, followed by enemy/tower
+ variety and stronger visuals. M11 implements the campaign foundation only:
+@@ -335,6 +394,20 @@ sharpness on other displays still need manual verification.
+ 
+ ### Manual acceptance checklist
+ 
++- [ ] Confirm Border Watch still has 25 Basic enemies and the example tower
++      layout works as before. Check unchanged Basic HP/speed and tower stats.
++- [ ] In Whispering Grove, compare the ready footer with the table above. Watch
++      Runner appear in wave 1 and Guard in wave 2; each still costs one life.
++- [ ] In Dawn Keep, check all three silhouettes/markers. Verify Runner needs two
++      basic hits and Guard seven, with a full HP bar initially and visible damage
++      feedback from the first hit. Guard must not have damage reduction.
++- [ ] Check overtaking Runners become priority when further along and in range;
++      in-flight shots must still hit only their original living target.
++- [ ] With slow frames/CPU throttling, verify mixed spawn order/spacing and no
++      duplicate enemies. Wait for slow Guards before starting the next wave.
++- [ ] Restart/replay/change chapters repeatedly: correct lists start over with
++      zero active enemies/kills/towers and 10 lives. Check defeat, victory, NEXT
++      LEVEL, audio, help text fit after resizing, and the browser console.
+ - [ ] Reload: confirm the first-launch story menu has three readable chapters.
+       Choose PLAY or close with Esc; confirm no enemy appears before Start Wave.
+ - [ ] Play each map: compare the path with markers, movement, placement rejection,
+@@ -436,8 +509,8 @@ sharpness on other displays still need manual verification.
+ 
+ ## Project structure
+ 
+-- `src/config`: dimensions, combat constants, and wave/life settings.
+-- `src/data`: chapter stories, palettes, orthogonal paths, and the original map.
++- `src/config`: dimensions, combat/enemy profiles, and wave/life settings.
++- `src/data`: chapter stories, palettes, paths, and ordered enemy wave lists.
+ - `src/systems`: pure movement, placement, combat, and wave/match logic.
+ - `src/entities`: Phaser enemy, tower, and projectile presentation.
+ - `src/scenes`: rendering, input, wave/combat orchestration, and result UI.
+@@ -465,12 +538,15 @@ Restart; game state still resets completely. Phaser handles context unlocking an
+ tab suspension/resume. The game stays playable without Web Audio.
+ M11 adds the three-map fantasy campaign, story menu, level selection, map palettes,
+ beacon gate, and manual next chapter. Combat and waves remain the same per map.
+-Enemy and tower variety is planned next; economy, upgrades, and selling remain out
+-of scope. See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
++M12 adds Runner/Guard profiles, distinct enemy silhouettes, normalized health bars,
++chapter-specific enemy lists, and next-wave/help composition information. Targeting,
++projectile damage/ownership, spawning intervals, lives, and outcomes are unchanged.
++Tower variety is planned next; economy, upgrades, and selling remain out of scope.
++See [docs/roadmap.md](docs/roadmap.md) for the expansion sequence.
+ 
+ No dependencies were added. The previously recorded M4 build passed with Vite's
+ warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
+-M5 through M11 build verification is pending as described above.
++M5 through M12 build verification is pending as described above.
+ 
+ ## Agent workflow and hooks
+ 
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index d926b51..f864099 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -25,13 +25,18 @@ the main README.
+ 
+ ## M12: enemy variety and wave composition
+ 
+-Next proposed implementation:
+-
+-- Keep the existing enemy as the baseline; add a fast, fragile runner and a slow,
+-  tougher guard with distinct silhouettes and readable HP bars.
+-- Describe wave composition in data and introduce the variants gradually across
+-  chapters, preserving manual wave starts and exact spawn accounting.
+-- Review speed/HP values and play through each chapter before accepting balance.
++Implemented in code, awaiting automated/browser acceptance:
++
++- Basic stays at 3 HP / 95px/s. Runner starts at 2 HP / 140px/s; Guard starts at
++  7 HP / 65px/s, without armor reduction or other special abilities.
++- Diamond/R and larger shield/G silhouettes distinguish the new kinds. HP bars
++  use each profile's maximum HP; help lists stats and the footer previews waves.
++- Ordered lists in level data keep 5/8/12 counts. Border Watch stays all Basic;
++  Grove introduces Runner in wave 1 and Guard in wave 2; Dawn Keep mixes all three.
++- Preserve each scheduled index/age through long frames and use the kind's own
++  speed. The numeric WaveSystem API and combat systems stay unchanged.
++- Review these initial speed/HP values by playing through the mixed chapters
++  before accepting balance.
+ - Preserve path-progress targeting, live-target projectile ownership, one lost
+   life per escape, and immediate defeat at zero lives.
+ 
+diff --git a/src/data/levels.ts b/src/data/levels.ts
+index 8599311..6587d14 100644
+--- a/src/data/levels.ts
++++ b/src/data/levels.ts
+@@ -1,10 +1,13 @@
+ import { PATH_TILES, type Point } from './map';
++import type { EnemyKind } from '../config/enemyConfig';
++import { WAVE_COUNTS } from '../config/waveConfig';
+ 
+ export type LevelDefinition = {
+   id: string;
+   title: string;
+   story: string;
+   path: readonly Point[];
++  waves: readonly (readonly EnemyKind[])[];
+   colors: {
+     grass: readonly [number, number];
+     path: number;
+@@ -21,6 +24,7 @@ export const LEVELS: readonly LevelDefinition[] = [
+     title: 'BORDER WATCH',
+     story: 'Border lanterns are going dark. Hold the watchpost and keep the road open for the Dawn Guard.',
+     path: PATH_TILES,
++    waves: WAVE_COUNTS.map((count) => Array.from({ length: count }, (): EnemyKind => 'basic')),
+     colors: {
+       grass: [0x70a855, 0x669e4d],
+       path: 0xb9905e,
+@@ -33,7 +37,13 @@ export const LEVELS: readonly LevelDefinition[] = [
+   {
+     id: 'whispering-grove',
+     title: 'WHISPERING GROVE',
+-    story: 'The Hollow host has reached the grove. Guard the winding trail so the refugees can reach the keep.',
++    story: 'Runner scouts race through the grove while Hollow Guards follow. Keep the refugee trail open.',
++    waves: [
++      ['basic', 'basic', 'runner', 'basic', 'runner'],
++      ['basic', 'runner', 'basic', 'runner', 'guard', 'basic', 'runner', 'basic'],
++      ['basic', 'runner', 'guard', 'basic', 'runner', 'basic',
++        'guard', 'runner', 'basic', 'runner', 'guard', 'basic'],
++    ],
+     path: [
+       { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 },
+       { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 3 },
+@@ -58,7 +68,13 @@ export const LEVELS: readonly LevelDefinition[] = [
+   {
+     id: 'dawn-keep',
+     title: 'DAWN KEEP',
+-    story: 'The last beacon stands beyond the ruins. Defend its approach until the Dawn Guard can rally at the gate.',
++    story: 'Hollow Guards march on the last beacon. Break their advance before the Dawn Guard rallies at the gate.',
++    waves: [
++      ['basic', 'runner', 'guard', 'runner', 'basic'],
++      ['runner', 'guard', 'basic', 'runner', 'guard', 'basic', 'runner', 'guard'],
++      ['guard', 'runner', 'basic', 'guard', 'runner', 'guard',
++        'basic', 'runner', 'guard', 'runner', 'basic', 'guard'],
++    ],
+     path: [
+       { x: 0, y: 6 }, { x: 1, y: 6 }, { x: 2, y: 6 },
+       { x: 3, y: 6 }, { x: 3, y: 5 }, { x: 3, y: 4 },
+diff --git a/src/entities/Enemy.ts b/src/entities/Enemy.ts
+index 9630751..243763d 100644
+--- a/src/entities/Enemy.ts
++++ b/src/entities/Enemy.ts
+@@ -1,5 +1,5 @@
+ import Phaser from 'phaser';
+-import { ENEMY_MAX_HEALTH, ENEMY_SPEED } from '../config/combatConfig';
++import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
+ import type { Point } from '../data/map';
+ import type { CombatTarget } from '../systems/Combat';
+ import { PathFollower } from '../systems/PathFollower';
+@@ -10,40 +10,68 @@ export class Enemy {
+   private readonly healthBar: Phaser.GameObjects.Rectangle;
+   private readonly hitFlash: Phaser.GameObjects.Rectangle;
+   private readonly follower: PathFollower;
+-  private displayedHealth = ENEMY_MAX_HEALTH;
++  private readonly maxHealth: number;
++  private readonly deathColor: number;
++  private displayedHealth: number;
+ 
+   constructor(
+     private readonly scene: Phaser.Scene,
+     path: Point[],
++    kind: EnemyKind = 'basic',
+   ) {
+-    this.follower = new PathFollower(path, ENEMY_SPEED);
++    const profile = ENEMY_TYPES[kind];
++    this.maxHealth = profile.maxHealth;
++    this.displayedHealth = profile.maxHealth;
++    this.deathColor = profile.burst;
++    this.follower = new PathFollower(path, profile.speed);
+     const follower = this.follower;
+     this.target = {
+       position: this.follower.position,
+-      health: ENEMY_MAX_HEALTH,
++      health: profile.maxHealth,
+       get progress() {
+         return follower.distanceTraveled;
+       },
+     };
+ 
+-    const body = scene.add
+-      .rectangle(0, 0, 26, 26, 0x9b5de5)
+-      .setStrokeStyle(3, 0x352044);
++    const width = kind === 'guard' ? 34 : kind === 'runner' ? 30 : 26;
++    const height = kind === 'guard' ? 32 : kind === 'runner' ? 24 : 26;
++    const body = kind === 'runner'
++      ? scene.add
++        .polygon(0, 0, [0, 12, 15, 0, 30, 12, 15, 24], profile.color)
++        .setStrokeStyle(2, profile.outline)
++      : scene.add
++        .rectangle(0, 0, width, height, profile.color)
++        .setStrokeStyle(kind === 'guard' ? 4 : 3, profile.outline);
+     const eyes = scene.add.rectangle(5, -3, 8, 5, 0xffffff);
+-    this.hitFlash = scene.add.rectangle(0, 0, 26, 26, 0xffffff).setAlpha(0);
+-    const healthBackground = scene.add.rectangle(0, -23, 30, 5, 0x633545);
++    const content: Phaser.GameObjects.GameObject[] = [body, eyes];
++
++    if (kind === 'guard') {
++      content.push(
++        scene.add.rectangle(0, 7, 14, 14, 0xb9e8f5).setStrokeStyle(2, profile.outline),
++      );
++    }
++
++    this.hitFlash = scene.add.rectangle(0, 0, width, height, 0xffffff).setAlpha(0);
++    content.push(this.hitFlash);
++
++    if (kind !== 'basic') {
++      content.push(
++        scene.add.text(0, kind === 'guard' ? 7 : 5, kind === 'runner' ? 'R' : 'G', {
++          fontFamily: 'monospace', fontSize: '9px', color: '#263d52',
++        }).setOrigin(0.5),
++      );
++    }
++
++    const barWidth = kind === 'guard' ? 42 : 30;
++    const barY = kind === 'guard' ? -27 : -23;
++    const healthBackground = scene.add.rectangle(0, barY, barWidth, 5, 0x633545);
+     this.healthBar = scene.add
+-      .rectangle(-15, -23, 30, 5, 0x91ff9e)
++      .rectangle(-barWidth / 2, barY, barWidth, 5, 0x91ff9e)
+       .setOrigin(0, 0.5);
++    content.push(healthBackground, this.healthBar);
+ 
+     this.sprite = scene.add
+-      .container(path[0].x, path[0].y, [
+-        body,
+-        eyes,
+-        this.hitFlash,
+-        healthBackground,
+-        this.healthBar,
+-      ])
++      .container(path[0].x, path[0].y, content)
+       .setDepth(2);
+   }
+ 
+@@ -66,7 +94,7 @@ export class Enemy {
+     }
+ 
+     this.displayedHealth = this.target.health;
+-    this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
++    this.healthBar.setScale(this.target.health / this.maxHealth, 1);
+     return damaged;
+   }
+ 
+@@ -76,7 +104,7 @@ export class Enemy {
+       .setDepth(4);
+ 
+     burst
+-      .fillStyle(0xc99aff)
++      .fillStyle(this.deathColor)
+       .fillRect(-10, -10, 6, 6)
+       .fillRect(4, -10, 6, 6)
+       .fillRect(-10, 4, 6, 6)
+diff --git a/src/scenes/GameScene.ts b/src/scenes/GameScene.ts
+index 577dae6..8a064e3 100644
+--- a/src/scenes/GameScene.ts
++++ b/src/scenes/GameScene.ts
+@@ -5,7 +5,8 @@ import {
+   TOWER_RANGE,
+ } from '../config/combatConfig';
+ import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
+-import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
++import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
++import { SPAWN_INTERVAL, STARTING_LIVES } from '../config/waveConfig';
+ import { LEVELS, type LevelDefinition } from '../data/levels';
+ import type { Point } from '../data/map';
+ import { CombatAudio } from '../entities/CombatAudio';
+@@ -56,7 +57,11 @@ export class GameScene extends Phaser.Scene {
+ 
+   create(): void {
+     this.placement = new TowerPlacement(COLS, ROWS, this.level.path);
+-    this.waves = new WaveSystem(WAVE_COUNTS, SPAWN_INTERVAL, STARTING_LIVES);
++    this.waves = new WaveSystem(
++      this.level.waves.map((wave) => wave.length),
++      SPAWN_INTERVAL,
++      STARTING_LIVES,
++    );
+     this.towerSelected = false;
+     this.towers = [];
+     this.enemies = [];
+@@ -593,12 +598,12 @@ export class GameScene extends Phaser.Scene {
+     this.refreshHud();
+   }
+ 
+-  private spawnEnemy(ageSeconds: number): void {
++  private spawnEnemy(ageSeconds: number, kind: EnemyKind): void {
+     const path = this.level.path.map((point) => ({
+       x: (point.x + 0.5) * TILE,
+       y: (point.y + 0.5) * TILE,
+     }));
+-    const enemy = new Enemy(this, path);
++    const enemy = new Enemy(this, path, kind);
+ 
+     enemy.update(ageSeconds * 1000);
+     this.enemies.push(enemy);
+@@ -727,6 +732,15 @@ export class GameScene extends Phaser.Scene {
+     this.add.container((COLS * TILE) / 2, (ROWS * TILE) / 2, content).setDepth(20);
+   }
+ 
++  private nextWaveSummary(): string {
++    const nextWave = this.level.waves[this.waves.waveNumber];
++
++    return Object.entries(ENEMY_TYPES).flatMap(([kind, profile]) => {
++      const count = nextWave.filter((enemy) => enemy === kind).length;
++      return count > 0 ? [`${profile.label} ${count}`] : [];
++    }).join(' / ');
++  }
++
+   private refreshHud(): void {
+     const waves = this.waves;
+     const ready = waves.state === 'ready';
+@@ -781,8 +795,9 @@ export class GameScene extends Phaser.Scene {
+     this.levelButton.input!.enabled = waves.state !== 'running';
+ 
+     if (ready) {
++      const action = panelOpen ? 'Close panel to prepare.' : 'N starts wave.';
+       this.phaseText.setText(
+-        `${this.level.title}: ready for wave ${waves.waveNumber + 1}. Place towers, then start.`,
++        `Wave ${waves.waveNumber + 1}: ${this.nextWaveSummary()}. ${action}`,
+       );
+     } else if (waves.state === 'running') {
+       this.phaseText.setText(
+@@ -806,8 +821,12 @@ export class GameScene extends Phaser.Scene {
+       enemy.update(delta);
+     }
+ 
+-    for (const age of this.waves.update(delta / 1000)) {
+-      this.spawnEnemy(age);
++    const firstSpawnIndex = this.waves.spawned;
++    const spawnAges = this.waves.update(delta / 1000);
++
++    for (const [offset, age] of spawnAges.entries()) {
++      const kind = this.level.waves[this.waves.waveNumber - 1][firstSpawnIndex + offset];
++      this.spawnEnemy(age, kind);
+     }
+ 
+     // Resolve escaped enemies before selecting targets or applying damage.
+diff --git a/src/scenes/createHelpPanel.ts b/src/scenes/createHelpPanel.ts
+index 6340727..67a00b6 100644
+--- a/src/scenes/createHelpPanel.ts
++++ b/src/scenes/createHelpPanel.ts
+@@ -5,6 +5,7 @@ import {
+   TOWER_RANGE,
+ } from '../config/combatConfig';
+ import { COLS, ROWS, TILE } from '../config/gameConfig';
++import { ENEMY_TYPES } from '../config/enemyConfig';
+ import { STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
+ 
+ export function createHelpPanel(
+@@ -52,23 +53,33 @@ export function createHelpPanel(
+     -320,
+     -116,
+     [
+-      'BUILD    B / BASIC TOWER selects or cancels building.',
+-      '         Click empty ground. Green = valid; red = blocked.',
+-      'INSPECT  Esc cancels building; click a placed tower.',
+-      `WAVES    N / START WAVE: ${WAVE_COUNTS.join(' / ')} enemies.`,
+-      '         Wait until every enemy is defeated or has escaped.',
+-      'LIVES    Each escape costs 1 life; kills increase KILLS.',
+-      'RESTART  R / RESTART resets the match and all towers.',
+-      'AUDIO    Use AUDIO: OFF / ON in the sidebar to toggle sound.',
++      'BUILD    B selects/cancels building, then click empty ground.',
++      '         Green = valid; red = blocked. Esc cancels building.',
++      'INSPECT  Cancel building, then click a placed tower.',
++      `WAVES    N starts ${WAVE_COUNTS.join(' / ')} enemies; wait until each wave clears.`,
++      'LIVES    Escape: -1. Kill: +1 KILLS. R restarts; AUDIO toggles sound.',
+     ].join('\n'),
+     {
+       fontFamily: 'monospace',
+-      fontSize: '15px',
++      fontSize: '14px',
+       color: '#ffffff',
+-      lineSpacing: 9,
++      lineSpacing: 5,
+       wordWrap: { width: 640 },
+     },
+   );
++  const enemyLegend = scene.add.text(-320, -2, 'ENEMIES (Runner: R / Guard: G)', {
++    fontFamily: 'monospace', fontSize: '13px', color: '#f5e6ae',
++  });
++  const enemyStats = scene.add.text(
++    -320,
++    18,
++    Object.values(ENEMY_TYPES).map((profile) =>
++      `${profile.label.padEnd(6)}  ${profile.maxHealth} HP / ${profile.speed}px/s`,
++    ).join('\n'),
++    {
++      fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4,
++    },
++  );
+   const stats = scene.add.text(
+     -320,
+     102,
+@@ -118,6 +129,8 @@ export function createHelpPanel(
+       title,
+       objective,
+       instructions,
++      enemyLegend,
++      enemyStats,
+       stats,
+       hint,
+       closeButton,
+diff --git a/src/tests/levels.test.ts b/src/tests/levels.test.ts
+index 7744811..6a93cc9 100644
+--- a/src/tests/levels.test.ts
++++ b/src/tests/levels.test.ts
+@@ -1,5 +1,7 @@
+ import { describe, expect, it } from 'vitest';
+ import { COLS, ROWS, TILE } from '../config/gameConfig';
++import { ENEMY_TYPES } from '../config/enemyConfig';
++import { WAVE_COUNTS } from '../config/waveConfig';
+ import { LEVELS } from '../data/levels';
+ import { PATH_TILES } from '../data/map';
+ import { PathFollower } from '../systems/PathFollower';
+@@ -16,8 +18,29 @@ describe('Campaign level data', () => {
+     expect(new Set(LEVELS.map((level) => JSON.stringify(level.path))).size).toBe(3);
+   });
+ 
++  it('keeps Border Watch entirely basic for the original match', () => {
++    expect(LEVELS[0].waves.flat().every((kind) => kind === 'basic')).toBe(true);
++  });
++
++  it('introduces runners before guards in Whispering Grove', () => {
++    expect(LEVELS[1].waves[0]).toContain('runner');
++    expect(LEVELS[1].waves[0]).not.toContain('guard');
++    expect(LEVELS[1].waves.slice(1).flat()).toContain('guard');
++  });
++
++  it('mixes all three enemy kinds in Dawn Keep', () => {
++    expect(new Set(LEVELS[2].waves.flat())).toEqual(new Set(Object.keys(ENEMY_TYPES)));
++  });
++
+   for (const level of LEVELS) {
+     describe(level.title, () => {
++      it('keeps exact wave counts and valid enemy kinds', () => {
++        expect(level.waves.map((wave) => wave.length)).toEqual(WAVE_COUNTS);
++        for (const kind of level.waves.flat()) {
++          expect(ENEMY_TYPES[kind]).toBeDefined();
++        }
++      });
++
+       it('keeps a continuous, non-repeating orthogonal path inside the map', () => {
+         expect(level.path.length).toBeGreaterThan(1);
+         const cells = new Set(level.path.map((point) => `${point.x},${point.y}`));
+diff --git a/src/config/enemyConfig.ts b/src/config/enemyConfig.ts
+new file mode 100644
+--- /dev/null
++++ b/src/config/enemyConfig.ts
+@@ -0,0 +1,30 @@
++import { ENEMY_MAX_HEALTH, ENEMY_SPEED } from './combatConfig';
++
++export const ENEMY_TYPES = {
++  basic: {
++    label: 'BASIC',
++    maxHealth: ENEMY_MAX_HEALTH,
++    speed: ENEMY_SPEED,
++    color: 0x9b5de5,
++    outline: 0x352044,
++    burst: 0xc99aff,
++  },
++  runner: {
++    label: 'RUNNER',
++    maxHealth: 2,
++    speed: 140,
++    color: 0xf2a65a,
++    outline: 0x7b3f23,
++    burst: 0xffd08a,
++  },
++  guard: {
++    label: 'GUARD',
++    maxHealth: 7,
++    speed: 65,
++    color: 0x6b91a6,
++    outline: 0x263d52,
++    burst: 0xa8c7d6,
++  },
++} as const;
++
++export type EnemyKind = keyof typeof ENEMY_TYPES;
+diff --git a/src/tests/EnemyTypes.test.ts b/src/tests/EnemyTypes.test.ts
+new file mode 100644
+--- /dev/null
++++ b/src/tests/EnemyTypes.test.ts
+@@ -0,0 +1,86 @@
++import { describe, expect, it } from 'vitest';
++import { PROJECTILE_SPEED, TOWER_DAMAGE, TOWER_RANGE } from '../config/combatConfig';
++import { ENEMY_TYPES, type EnemyKind } from '../config/enemyConfig';
++import { PathFollower } from '../systems/PathFollower';
++import { ProjectileMotion, selectTarget, type CombatTarget } from '../systems/Combat';
++
++function createEnemy(kind: EnemyKind) {
++  const profile = ENEMY_TYPES[kind];
++  const follower = new PathFollower([{ x: 0, y: 0 }, { x: 1000, y: 0 }], profile.speed);
++  const target: CombatTarget = {
++    position: follower.position,
++    health: profile.maxHealth,
++    get progress() {
++      return follower.distanceTraveled;
++    },
++  };
++
++  return { follower, target };
++}
++
++describe('Enemy profiles in movement and combat', () => {
++  const profiles = [
++    { kind: 'basic', speed: 95, hp: 3 },
++    { kind: 'runner', speed: 140, hp: 2 },
++    { kind: 'guard', speed: 65, hp: 7 },
++  ] as const;
++
++  for (const { kind, speed, hp } of profiles) {
++    it(`${kind} moves at its configured speed and takes ${hp} basic hits`, () => {
++      const { follower, target } = createEnemy(kind);
++      follower.update(1);
++      expect(target.position).toEqual({ x: speed, y: 0 });
++      expect(target.progress).toBe(speed);
++      expect(target.health).toBe(hp);
++
++      for (let hit = 1; hit <= hp; hit++) {
++        const projectile = new ProjectileMotion(
++          { x: 0, y: 0 }, target, PROJECTILE_SPEED, TOWER_DAMAGE,
++        );
++        expect(projectile.update(1)).toBe(true);
++        expect(target.health).toBe(hp - hit);
++      }
++    });
++  }
++
++  it('prioritizes a later runner that overtakes an earlier guard', () => {
++    const guard = createEnemy('guard');
++    const runner = createEnemy('runner');
++    guard.follower.update(1.5);
++    runner.follower.update(1);
++
++    expect(selectTarget({ x: 100, y: 0 }, [guard.target, runner.target], TOWER_RANGE))
++      .toBe(runner.target);
++  });
++
++  it('keeps spawn order when different kinds have equal progress', () => {
++    const guard = createEnemy('guard');
++    const runner = createEnemy('runner');
++
++    expect(selectTarget({ x: 0, y: 0 }, [guard.target, runner.target], TOWER_RANGE))
++      .toBe(guard.target);
++  });
++
++  it('keeps a projectile on its original guard after a runner becomes the priority', () => {
++    const guard = createEnemy('guard');
++    const runner = createEnemy('runner');
++    guard.follower.update(1);
++    const projectile = new ProjectileMotion(
++      { x: 0, y: 0 }, guard.target, PROJECTILE_SPEED, TOWER_DAMAGE,
++    );
++    runner.follower.update(1.5);
++
++    expect(selectTarget({ x: 100, y: 0 }, [guard.target, runner.target], TOWER_RANGE))
++      .toBe(runner.target);
++    expect(projectile.update(1)).toBe(true);
++    expect(guard.target.health).toBe(6);
++    expect(runner.target.health).toBe(2);
++
++    const expired = new ProjectileMotion(
++      { x: 0, y: 0 }, guard.target, PROJECTILE_SPEED, TOWER_DAMAGE,
++    );
++    guard.target.health = 0;
++    expect(expired.update(1)).toBe(true);
++    expect(runner.target.health).toBe(2);
++  });
++});

@@ -63,14 +63,15 @@ export function createHelpPanel(
       wordWrap: { width: 640 },
     },
   );
-  const enemyLegend = scene.add.text(-320, -2, 'ENEMIES (Runner: R / Guard: G)', {
+  const enemyLegend = scene.add.text(-320, -2, 'ENEMIES (Hollow Host)', {
     fontFamily: 'monospace', fontSize: '13px', color: '#f5e6ae',
   });
+  const enemyNames = { basic: 'Goblin', runner: 'Scout', guard: 'Ogre' };
   const enemyStats = scene.add.text(
     -320,
     18,
-    Object.values(ENEMY_TYPES).map((profile) =>
-      `${profile.label.padEnd(6)}  ${profile.maxHealth} HP / ${profile.speed}px/s`,
+    Object.entries(ENEMY_TYPES).map(([kind, profile]) =>
+      `${profile.label.padEnd(6)} ${enemyNames[kind as keyof typeof enemyNames].padEnd(6)} ${profile.maxHealth}HP ${profile.speed}px/s`,
     ).join('\n'),
     {
       fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', lineSpacing: 4,

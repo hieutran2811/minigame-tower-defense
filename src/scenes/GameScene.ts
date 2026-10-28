@@ -7,6 +7,7 @@ import { LEVELS, type LevelDefinition } from '../data/levels';
 import type { Point } from '../data/map';
 import { CombatAudio } from '../entities/CombatAudio';
 import { Enemy } from '../entities/Enemy';
+import { createEnemyAnimations, preloadEnemyArt } from '../entities/enemyArt';
 import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
 import { TowerPlacement } from '../systems/TowerPlacement';
@@ -56,7 +57,12 @@ export class GameScene extends Phaser.Scene {
     return LEVELS[this.levelIndex];
   }
 
+  preload(): void {
+    preloadEnemyArt(this);
+  }
+
   create(): void {
+    createEnemyAnimations(this);
     this.placement = new TowerPlacement(COLS, ROWS, this.level.path);
     this.waves = new WaveSystem(
       this.level.waves.map((wave) => wave.length),
