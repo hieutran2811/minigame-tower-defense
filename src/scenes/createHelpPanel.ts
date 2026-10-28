@@ -59,6 +59,7 @@ export function createHelpPanel(
       '         Wait until every enemy is defeated or has escaped.',
       'LIVES    Each escape costs 1 life; kills increase KILLS.',
       'RESTART  R / RESTART resets the match and all towers.',
+      'AUDIO    Use AUDIO: OFF / ON in the sidebar to toggle sound.',
     ].join('\n'),
     {
       fontFamily: 'monospace',

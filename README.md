@@ -1,4 +1,4 @@
-# Mini Tower Defense — Milestone 9
+# Mini Tower Defense — Milestone 10
 
 A desktop-browser 2D tower defense game using Phaser 3, TypeScript, and Vite.
 The 12x8 map uses 64px tiles on a logical 960x640 canvas with a sidebar.
@@ -31,6 +31,10 @@ build label appear only in development.
 7. Click **HOW TO PLAY** or press **H** to open help before/between waves or
    after the result. Close it with **H**, **Esc**, or the close button. During a
    wave, the help button is dimmed and reads **HELP AFTER WAVE**.
+8. Click **AUDIO: OFF** in the sidebar to enable combat sounds; click **AUDIO: ON**
+   to mute immediately. Audio starts off, and your choice survives Restart but
+   resets on a page reload. The audio button works during waves, with help open,
+   and after a result. It shows **AUDIO UNAVAILABLE** when Web Audio is unavailable.
 
 Keyboard shortcuts use the same actions as the buttons:
 
@@ -124,6 +128,14 @@ These effects never apply damage or delay enemy removal. Effects already running
 may finish after the result appears; no new shots or enemies are created. Restart
 clears the scene's display objects and tweens, including all active effects.
 
+M10 adds short generated tones for shots, nonlethal hits, kills, and escapes.
+Lethal hits use the kill cue instead of a separate hit cue. Closely grouped hits
+on one surviving enemy share one hit cue per frame. Audio never changes damage,
+cooldowns, wave timing, or removal. Existing tones can finish after the result;
+Restart and mute stop all active tones. Muted/suspended audio does not queue old
+events to play later. Up to 16 tones may overlap; extra cues are skipped, and an
+escape warning replaces other active tones so the lost life remains audible.
+
 Combat constants are in `src/config/combatConfig.ts`; wave counts, spawn interval,
 and starting lives are in `src/config/waveConfig.ts`.
 
@@ -152,7 +164,26 @@ npm run preview
 
 Open the preview URL to test production. FPS and the development label are hidden.
 
-### Milestone 9 verification status
+### Milestone 10 verification status
+
+The approved M10 scope is combat audio with an on/off button. `CombatAudio.ts`
+generates tones using Phaser's shared Web Audio context/destination; it does not
+create or close an AudioContext. `GameScene.ts` owns the default-off preference,
+toggle, actual-event triggers, and scene cleanup. `Enemy.refreshHealthBar()` now
+reports whether HP decreased so the scene can emit a nonlethal hit cue.
+No dependencies, audio assets, or system/game-rule changes were added.
+
+- Added five `CombatAudio.test.ts` tests for default mute/suspended context,
+  mute/unmute without replay, natural completion, repeated cleanup without closing
+  the shared context, and escape-warning priority.
+- `npm run test` and `npm run build` were attempted after M10 implementation. Both
+  exited before their scripts ran with Node `EPERM: operation not permitted,
+  lstat 'C:\Users\Admin'`. The new tests and M10 build are not yet confirmed.
+- Source review covered cue ownership, node cleanup, shared-context use, silent
+  fallback, and Restart preference retention. Browser checks of audible output,
+  volume, tab switching, and repeated Restart are pending.
+
+### Milestone 9 verification status (previously recorded)
 
 The approved M9 scope is B/N/R shortcuts and matching in-game instructions.
 Keyboard and mouse controls share handlers in `GameScene.ts`, preserving existing
@@ -245,6 +276,21 @@ sharpness on other displays still need manual verification.
 
 ### Manual acceptance checklist
 
+- [ ] Reload the page: AUDIO: OFF is the default. Play briefly while muted and
+      confirm silence. Enable audio and hear new shot/hit/kill/escape cues only.
+- [ ] Mute during combat: all current tones should stop immediately. Unmute and
+      confirm old events are not replayed; shots without impact must not make hit
+      sounds, and an escape must not make a kill sound.
+- [ ] Restart with R and the button while sounds play; old tones must stop, while
+      the selected AUDIO: ON/OFF preference remains. Repeat after victory/defeat.
+- [ ] Toggle audio with help open and after a result; check labels update without
+      placing towers or starting a wave. Check the button fits after resizing and
+      in production preview.
+- [ ] Switch away from and back to the tab: suspended audio must not accumulate a
+      burst of old cues. With many towers, check volume stays reasonable and the
+      escape warning remains audible. Check the console for audio errors.
+- [ ] If Web Audio is unavailable, confirm AUDIO UNAVAILABLE is disabled while
+      all game controls, combat, and outcomes still work normally.
 - [ ] Press B over grass: show building selection/preview immediately. Press B
       again to cancel, then repeat using BASIC TOWER/CANCEL BUILD. A pointer
       outside the game must not show a stale placement preview when B is pressed.
@@ -339,11 +385,15 @@ M8 adds a HOW TO PLAY panel and H/Esc controls, available outside active waves.
 The panel covers the map while Restart remains accessible in the sidebar.
 M9 adds B/N/R shortcuts using the same scene handlers as their mouse buttons,
 ignores repeated keydown events, and updates help/footer instructions.
+M10 adds optional generated combat tones, a sidebar audio toggle, resource cleanup
+on mute/Restart, and audio lifecycle unit tests. The UI preference persists across
+Restart; game state still resets completely. Phaser handles context unlocking and
+tab suspension/resume. The game stays playable without Web Audio.
 Economy, upgrades, selling, and multiple enemy types remain out of scope.
 
 No dependencies were added. The previously recorded M4 build passed with Vite's
 warning about a JavaScript chunk larger than 500 kB because it includes Phaser.
-M5 through M9 build verification is pending as described above.
+M5 through M10 build verification is pending as described above.
 
 ## Agent workflow and hooks
 

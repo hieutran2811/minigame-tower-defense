@@ -52,8 +52,10 @@ export class Enemy {
     this.sprite.setPosition(this.follower.position.x, this.follower.position.y);
   }
 
-  refreshHealthBar(): void {
-    if (this.target.health < this.displayedHealth) {
+  refreshHealthBar(): boolean {
+    const damaged = this.target.health < this.displayedHealth;
+
+    if (damaged) {
       this.scene.tweens.killTweensOf(this.hitFlash);
       this.hitFlash.setAlpha(0.75);
       this.scene.tweens.add({
@@ -65,6 +67,7 @@ export class Enemy {
 
     this.displayedHealth = this.target.health;
     this.healthBar.setScale(this.target.health / ENEMY_MAX_HEALTH, 1);
+    return damaged;
   }
 
   showDeathEffect(): void {

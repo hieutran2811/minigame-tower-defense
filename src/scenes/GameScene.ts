@@ -7,6 +7,7 @@ import {
 import { COLS, ROWS, TILE, WIDTH } from '../config/gameConfig';
 import { SPAWN_INTERVAL, STARTING_LIVES, WAVE_COUNTS } from '../config/waveConfig';
 import { PATH_TILES, type Point } from '../data/map';
+import { CombatAudio } from '../entities/CombatAudio';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 import { Tower } from '../entities/Tower';
@@ -27,6 +28,9 @@ export class GameScene extends Phaser.Scene {
   private waveButton!: Phaser.GameObjects.Text;
   private helpButton!: Phaser.GameObjects.Text;
   private helpPanel!: Phaser.GameObjects.Container;
+  private audioButton!: Phaser.GameObjects.Text;
+  private combatAudio?: CombatAudio;
+  private audioEnabled = false;
   private fpsText?: Phaser.GameObjects.Text;
   private placement!: TowerPlacement;
   private placementPreview!: Phaser.GameObjects.Graphics;
@@ -48,6 +52,11 @@ export class GameScene extends Phaser.Scene {
     this.enemies = [];
     this.projectiles = [];
     this.fpsText = undefined;
+    this.combatAudio =
+      this.sound instanceof Phaser.Sound.WebAudioSoundManager
+        ? new CombatAudio(this.sound.context, this.sound.destination)
+        : undefined;
+    this.combatAudio?.setEnabled(this.audioEnabled);
 
     this.drawMap();
     drawPathGuides(this);
@@ -55,6 +64,7 @@ export class GameScene extends Phaser.Scene {
     this.createPlacementControls();
     this.createMatchControls();
     this.createHelpControls();
+    this.createAudioControls();
     this.refreshHud();
 
     this.input.on('pointermove', this.updatePlacementPreview, this);
@@ -66,7 +76,9 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-N', this.startNextWave, this);
     this.input.keyboard?.on('keydown-R', this.restartMatch, this);
 
+    const audio = this.combatAudio;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      audio?.stop();
       this.input.off('pointermove', this.updatePlacementPreview, this);
       this.input.off('pointerdown', this.handleMapPointerDown, this);
       this.input.off('gameout', this.hidePlacementPreview, this);
@@ -130,7 +142,7 @@ export class GameScene extends Phaser.Scene {
       fontSize: '17px',
       color: '#f5e6ae',
     });
-    this.add.text(786, 68, 'MILESTONE 9', {
+    this.add.text(786, 68, 'MILESTONE 10', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#b4d9bc',
@@ -469,6 +481,36 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private createAudioControls(): void {
+    this.audioButton = this.add
+      .text(786, 608, '', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: this.audioEnabled ? '#236b88' : '#33485c',
+        fixedWidth: 148,
+        align: 'center',
+        padding: { x: 8, y: 6 },
+      })
+      .setText(this.audioEnabled ? 'AUDIO: ON' : 'AUDIO: OFF');
+
+    if (!this.combatAudio) {
+      this.audioButton.setText('AUDIO UNAVAILABLE').setAlpha(0.55);
+      return;
+    }
+
+    this.audioButton.setInteractive({ useHandCursor: true });
+    this.audioButton.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.leftButtonDown()) {
+        this.audioEnabled = !this.audioEnabled;
+        this.combatAudio?.setEnabled(this.audioEnabled);
+        this.audioButton
+          .setText(this.audioEnabled ? 'AUDIO: ON' : 'AUDIO: OFF')
+          .setBackgroundColor(this.audioEnabled ? '#236b88' : '#33485c');
+      }
+    });
+  }
+
   private toggleHelp(event?: KeyboardEvent): void {
     if (event?.repeat || this.waves.state === 'running') {
       return;
@@ -656,6 +698,7 @@ export class GameScene extends Phaser.Scene {
 
         if (this.waves.lives < livesBefore) {
           this.flashEscape();
+          this.combatAudio?.play('escape');
         }
 
         enemy.destroy();
@@ -673,6 +716,7 @@ export class GameScene extends Phaser.Scene {
 
         if (target) {
           this.projectiles.push(new Projectile(this, tower, target));
+          this.combatAudio?.play('shot');
         }
       }
 
@@ -689,11 +733,14 @@ export class GameScene extends Phaser.Scene {
         if (enemy.dead) {
           this.waves.resolveEnemy('killed');
           enemy.showDeathEffect();
+          this.combatAudio?.play('kill');
           enemy.destroy();
           return false;
         }
 
-        enemy.refreshHealthBar();
+        if (enemy.refreshHealthBar()) {
+          this.combatAudio?.play('hit');
+        }
         return true;
       });
     }
